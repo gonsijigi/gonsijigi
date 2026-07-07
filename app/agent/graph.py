@@ -42,7 +42,7 @@ def run_agent(user_id: str, question: str, stock_codes: list) -> str:
     result = app_graph.invoke(
         {"user_input": question, "stock_codes": stock_codes,
          "disclosures": [], "interpretation": "", "risk_level": "normal",
-         "blocked": False, "response": None},
+         "risk_keywords": [], "blocked": False, "response": None},
         config=config,
     )
     return result["response"] or "처리 결과가 없습니다."

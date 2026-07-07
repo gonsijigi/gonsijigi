@@ -12,18 +12,27 @@ router = APIRouter(prefix="/admin")
 async def review_queue():
     items = list_queue()
     if not items:
-        rows = "<tr><td colspan='5' style='text-align:center;color:#888'>대기 항목 없음</td></tr>"
+        rows = "<tr><td colspan='6' style='text-align:center;color:#888'>대기 항목 없음</td></tr>"
     else:
         rows = ""
         for it in items:
             keywords = ", ".join(it.get("risk_keywords") or []) or "—"
             dart_link = f"https://dart.fss.or.kr/dsaf001/main.do?rcpNo={it['rcept_no']}"
+            interpretation = it.get("interpretation", "").replace("<", "&lt;").replace(">", "&gt;")
+            card = it.get("card", "").replace("<", "&lt;").replace(">", "&gt;")
             rows += f"""
             <tr>
               <td>{it['queued_at']}</td>
               <td>{it['corp_name']}</td>
               <td><a href="{dart_link}" target="_blank">{it['report_nm']}</a></td>
               <td><span class="tag">{keywords}</span></td>
+              <td>
+                <p class="interp">{interpretation}</p>
+                <details>
+                  <summary>카드 미리보기</summary>
+                  <pre class="card-pre">{card}</pre>
+                </details>
+              </td>
               <td>
                 <form method="post" action="/admin/approve/{it['id']}" style="display:inline">
                   <button class="btn-approve">승인</button>
@@ -46,6 +55,10 @@ async def review_queue():
   tr:last-child td{{border-bottom:none}}
   a{{color:#1B2A4A}}
   .tag{{background:#FFF3CD;color:#856404;border-radius:4px;padding:2px 7px;font-size:12px}}
+  .interp{{margin:0 0 6px;line-height:1.5;color:#333}}
+  details summary{{cursor:pointer;color:#6B7A90;font-size:12px}}
+  .card-pre{{background:#F0F4F8;border-radius:6px;padding:10px;font-size:11px;
+             white-space:pre-wrap;margin:6px 0 0;color:#333;max-width:360px}}
   .btn-approve{{background:#1B7A4A;color:#fff;border:0;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:12px;margin-right:4px}}
   .btn-reject{{background:#A0291C;color:#fff;border:0;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:12px}}
   .btn-approve:hover{{background:#155f3a}}.btn-reject:hover{{background:#7d1f16}}
@@ -54,7 +67,7 @@ async def review_queue():
 <p class="sub">고위험 공시는 승인 후 알림함으로 발송됩니다. 반려 시 폐기.</p>
 <table>
   <thead><tr>
-    <th>접수 시각</th><th>회사</th><th>공시 제목</th><th>위험 키워드</th><th>처리</th>
+    <th>접수 시각</th><th>회사</th><th>공시 제목</th><th>위험 키워드</th><th>AI 해석 내용</th><th>처리</th>
   </tr></thead>
   <tbody>{rows}</tbody>
 </table>
