@@ -1,5 +1,5 @@
 # 공시지기 이미지 — 빌드: docker build -f infra/Dockerfile -t gonsijigi .
-FROM python:3.11-slim
+FROM python:3.13-slim
 WORKDIR /srv
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

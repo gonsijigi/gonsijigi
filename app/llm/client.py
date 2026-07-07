@@ -12,7 +12,7 @@ def llm(prompt: str, fallback: str) -> str:
     try:
         res = client.chat.completions.create(
             model=LLM_MODEL, messages=[{"role": "user", "content": prompt}],
-            temperature=0.2, timeout=8,
+            temperature=0.2, timeout=60,
         )
         return res.choices[0].message.content.strip()
     except Exception as e:
