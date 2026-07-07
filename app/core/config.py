@@ -7,3 +7,4 @@ load_dotenv()
 LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "http://localhost:8000/v1/")
 LLM_API_KEY = os.environ.get("LLM_API_KEY", "EMPTY")
 LLM_MODEL = os.environ.get("LLM_MODEL", "gemma-4-e4b-it")
+REPLAY_MODE = os.environ.get("REPLAY_MODE", "false").lower() == "true"

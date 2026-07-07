@@ -4,6 +4,7 @@
 from datetime import datetime
 # --- corpCode 매핑: 종목코드(6자리) ↔ DART 고유번호(8자리) 전화번호부 ---
 import io, json, os, zipfile
+from pathlib import Path
 import xml.etree.ElementTree as ET
 import requests
 
@@ -52,9 +53,33 @@ MOCK_DISCLOSURES = {
 }
 
 
+REPLAY_SAMPLE_PATH = Path(__file__).resolve().parents[2] / "data" / "replay_sample.json"
+_replay_index: dict[str, int] = {}
+
+
+def _replay_search(stock_code: str) -> list[dict]:
+    """REPLAY_MODE=true 일 때 호출. replay_sample.json 에서 해당 종목 공시를
+    호출마다 한 건씩 순서대로 반환한다. 끝까지 가면 처음으로 순환."""
+    with open(REPLAY_SAMPLE_PATH, encoding="utf-8") as f:
+        pool = json.load(f)
+    items = [d for d in pool if d.get("stock_code") == stock_code]
+    if not items:
+        items = pool  # 종목 필터 매칭 없으면 전체를 순환
+    idx = _replay_index.get(stock_code, 0) % len(items)
+    _replay_index[stock_code] = idx + 1
+    picked = items[idx]
+    picked.pop("stock_code", None)  # 내부 필드 제거 후 반환
+    print(f"[리플레이] {picked.get('corp_name')} — {picked.get('report_nm')}")
+    return [picked]
+
+
 def dart_search(stock_code: str, bgn_de: str | None = None, end_de: str | None = None) -> list[dict]:
     """공시 목록 조회 — DART list.json 실호출. 기본은 '오늘' 하루.
     키·매핑이 없거나 호출이 실패하면 mock으로 폴백해 데모가 죽지 않게 한다."""
+    from app.core.config import REPLAY_MODE
+    if REPLAY_MODE:
+        return _replay_search(stock_code)
+
     api_key = os.environ.get("DART_API_KEY")
     try:
         corp_code = get_corp_code(stock_code)
