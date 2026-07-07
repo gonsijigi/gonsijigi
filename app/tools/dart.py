@@ -53,6 +53,52 @@ MOCK_DISCLOSURES = {
 }
 
 
+import re as _re
+import warnings as _warnings
+from bs4 import BeautifulSoup as _BS, XMLParsedAsHTMLWarning
+_warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
+
+
+def get_document_text(rcept_no: str) -> str:
+    """공시 원문 XML → 읽기 좋은 평문 변환. 표는 '항목 | 값' 구조로 보존."""
+    import OpenDartReader
+    api_key = os.environ.get("DART_API_KEY")
+    if not api_key:
+        return ""
+    dart = OpenDartReader(api_key)
+    try:
+        raw_docs = dart.document_all(rcept_no)
+    except Exception as e:
+        print(f"[경고] document_all 실패: {e.__class__.__name__}")
+        return ""
+    if not raw_docs:
+        return ""
+
+    parts: list[str] = []
+    for doc in raw_docs:
+        if not isinstance(doc, str):
+            doc = str(doc)
+        soup = _BS(doc, "html.parser")
+        # 표를 평문화한 뒤 원본에서 제거 → 나머지 텍스트와 분리 처리
+        for table in soup.find_all("table"):
+            rows: list[str] = []
+            for tr in table.find_all("tr"):
+                cells = [
+                    " ".join((td.get_text() or "").split())
+                    for td in tr.find_all(["td", "th"])
+                ]
+                if any(cells):
+                    rows.append(" | ".join(cells))
+            table.replace_with("\n" + "\n".join(rows) + "\n")
+        text = soup.get_text("\n")
+        # 과도한 공백·빈 줄 정리
+        text = _re.sub(r"[ \t]+", " ", text)
+        text = _re.sub(r"\n{3,}", "\n\n", text)
+        parts.append(text.strip())
+
+    return "\n\n".join(parts)
+
+
 REPLAY_SAMPLE_PATH = Path(__file__).resolve().parents[2] / "data" / "replay_sample.json"
 _replay_index: dict[str, int] = {}
 

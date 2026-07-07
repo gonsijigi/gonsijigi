@@ -4,3 +4,9 @@ langgraph
 openai
 python-dotenv
 requests
+opendartreader==0.2.3
+beautifulsoup4==4.15.0
+langchain-postgres==0.0.17
+psycopg[binary]==3.3.4
+langchain-ollama==1.1.0
+langchain-text-splitters==1.1.2
