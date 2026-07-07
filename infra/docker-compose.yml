@@ -1,0 +1,16 @@
+# D2 준비물: RAG 저장소(pgvector) + 세션/큐(Redis)
+# 실행: docker compose -f infra/docker-compose.yml up -d
+services:
+  db:
+    image: pgvector/pgvector:pg16          # PostgreSQL + pgvector 확장
+    environment:
+      POSTGRES_USER: gonsijigi
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}   # 개발 기본값 — 운영은 .env/Secret
+      POSTGRES_DB: gonsijigi
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+volumes:
+  pgdata:

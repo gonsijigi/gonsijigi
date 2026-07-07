@@ -1,0 +1,23 @@
+# [설계 선언용] 운영 이관 시의 K8s 배포 형태 — 실배포는 이번 범위 밖 (보고서 6.4절)
+# 포인트: 민감정보는 Secret 참조 · 롤링 업데이트 · 오토스케일링은 HPA로 확장
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: gonsijigi }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: gonsijigi } }
+  template:
+    metadata: { labels: { app: gonsijigi } }
+    spec:
+      containers:
+        - name: app
+          image: harbor.example.com/gonsijigi/app:latest
+          ports: [{ containerPort: 8000 }]
+          envFrom: [{ secretRef: { name: gonsijigi-secrets } }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: gonsijigi }
+spec:
+  selector: { app: gonsijigi }
+  ports: [{ port: 80, targetPort: 8000 }]

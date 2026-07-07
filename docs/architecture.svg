@@ -1,0 +1,142 @@
+<svg width="1680" height="980" viewBox="0 0 1680 980" xmlns="http://www.w3.org/2000/svg" font-family="Noto Sans CJK KR, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4A6FA5"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#D98E2B"/>
+    </marker>
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8A97A8"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#C0504D"/></marker>
+  </defs>
+
+  <rect x="0" y="0" width="1680" height="980" fill="#FFFFFF"/>
+
+  <!-- 제목 -->
+  <text x="40" y="52" font-size="27" font-weight="bold" fill="#1B2A4A">공시지기 — 개인투자자용 공시 알림·해석 AI Agent 아키텍처</text>
+  <text x="40" y="82" font-size="15" fill="#6B7A90">MVP 구성도 · 공시 수집부터 해석, 위험 통제, 알림 발송까지의 전체 흐름</text>
+
+  <!-- Kubernetes 클러스터 경계 -->
+  <rect x="395" y="120" width="1245" height="710" rx="14" fill="#F8FAFC" stroke="#9AA7B8" stroke-width="1.6" stroke-dasharray="9 6"/>
+  <text x="415" y="150" font-size="14" fill="#5A6B80">Kubernetes 클러스터  ·  Docker 컨테이너로 배포(Harbor 레지스트리)  ·  Gitea CI/CD → 롤링 업데이트 무중단 배포  ·  피크 시간대 오토스케일링</text>
+
+  <!-- 사용자 박스 -->
+  <rect x="40" y="350" width="260" height="150" rx="12" fill="#1B2A4A"/>
+  <text x="170" y="398" font-size="20" font-weight="bold" fill="#FFFFFF" text-anchor="middle">김개미 (사용자)</text>
+  <text x="170" y="428" font-size="14" fill="#C9D6E8" text-anchor="middle">웹 브라우저 · 모바일</text>
+  <text x="170" y="452" font-size="13" fill="#C9D6E8" text-anchor="middle">관심 종목 등록 · 질문 · 알림 수신</text>
+
+  <!-- 외부 데이터 원천 -->
+  <rect x="40" y="640" width="260" height="170" rx="12" fill="#FFFFFF" stroke="#8A97A8" stroke-width="1.5"/>
+  <text x="60" y="676" font-size="16" font-weight="bold" fill="#1B2A4A">외부 데이터 원천</text>
+  <text x="60" y="708" font-size="13.5" fill="#33475E">· DART 전자공시 OpenAPI</text>
+  <text x="60" y="734" font-size="13.5" fill="#33475E">· KRX KIND 공시</text>
+  <text x="60" y="760" font-size="13.5" fill="#33475E">· 뉴스 · 시세 API</text>
+  <text x="60" y="790" font-size="12" fill="#8A97A8">방화벽 아웃바운드 통제 하에 수집</text>
+
+  <!-- FastAPI 게이트웨이 -->
+  <rect x="430" y="360" width="230" height="130" rx="10" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="2"/>
+  <text x="545" y="400" font-size="17" font-weight="bold" fill="#1B2A4A" text-anchor="middle">FastAPI 게이트웨이</text>
+  <text x="545" y="428" font-size="13" fill="#33475E" text-anchor="middle">사용자 인증 · 세션</text>
+  <text x="545" y="452" font-size="13" fill="#33475E" text-anchor="middle">SSE 스트리밍 응답</text>
+
+  <!-- LangGraph 오케스트레이터 -->
+  <rect x="700" y="180" width="910" height="430" rx="12" fill="#EEF3FA" stroke="#4A6FA5" stroke-width="1.6"/>
+  <text x="722" y="214" font-size="16" font-weight="bold" fill="#1B2A4A">LangGraph 에이전트 오케스트레이터  (상태 머신 · thread_id 세션 · 체크포인터)</text>
+
+  <!-- 파이프라인 1행 -->
+  <rect x="730" y="245" width="160" height="80" rx="8" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="810" y="278" font-size="15" font-weight="bold" fill="#1B2A4A" text-anchor="middle">가드레일</text>
+  <text x="810" y="302" font-size="11.5" fill="#5A6B80" text-anchor="middle">투자자문성 요청 차단</text>
+
+  <rect x="930" y="245" width="160" height="80" rx="8" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="1010" y="278" font-size="15" font-weight="bold" fill="#1B2A4A" text-anchor="middle">공시 분류</text>
+  <text x="1010" y="302" font-size="11.5" fill="#5A6B80" text-anchor="middle">유형 · 중요도 판정</text>
+
+  <rect x="1130" y="245" width="160" height="80" rx="8" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="1210" y="278" font-size="15" font-weight="bold" fill="#1B2A4A" text-anchor="middle">RAG 해석 생성</text>
+  <text x="1210" y="302" font-size="11.5" fill="#5A6B80" text-anchor="middle">근거 검색 + 출처 결합</text>
+
+  <rect x="1330" y="245" width="160" height="80" rx="8" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="1410" y="278" font-size="15" font-weight="bold" fill="#1B2A4A" text-anchor="middle">위험도 판단</text>
+  <text x="1410" y="302" font-size="11.5" fill="#5A6B80" text-anchor="middle">고위험 공시 탐지</text>
+
+  <!-- 파이프라인 2행 -->
+  <rect x="930" y="460" width="200" height="86" rx="8" fill="#FBEED3" stroke="#D98E2B" stroke-width="1.8"/>
+  <text x="1030" y="496" font-size="15" font-weight="bold" fill="#7A5310" text-anchor="middle">알림 생성 · 발송</text>
+  <text x="1030" y="520" font-size="11.5" fill="#7A5310" text-anchor="middle">호재/악재/중립 + 원문 링크</text>
+
+  <rect x="1270" y="460" width="300" height="86" rx="8" fill="#F6E3E1" stroke="#C0504D" stroke-width="1.8"/>
+  <text x="1420" y="496" font-size="15" font-weight="bold" fill="#7B2E2B" text-anchor="middle">컴플라이언스 검토 (HITL)</text>
+  <text x="1420" y="520" font-size="11.5" fill="#7B2E2B" text-anchor="middle">고위험 공시는 사람이 확인 후 발송</text>
+
+  <!-- 파이프라인 화살표 -->
+  <line x1="890" y1="285" x2="922" y2="285" stroke="#4A6FA5" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1090" y1="285" x2="1122" y2="285" stroke="#4A6FA5" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1290" y1="285" x2="1322" y2="285" stroke="#4A6FA5" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 위험도 → 분기 -->
+  <path d="M 1380 325 L 1120 452" fill="none" stroke="#4A6FA5" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1190" y="386" font-size="12.5" font-weight="bold" fill="#4A6FA5">일반</text>
+  <path d="M 1425 325 L 1425 452" fill="none" stroke="#C0504D" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1438" y="392" font-size="12.5" font-weight="bold" fill="#C0504D">고위험</text>
+  <line x1="1262" y1="503" x2="1138" y2="503" stroke="#C0504D" stroke-width="2" marker-end="url(#arrowRed)"/>
+  <text x="1160" y="492" font-size="12" fill="#C0504D">승인 시</text>
+
+  <!-- FastAPI → 가드레일 -->
+  <path d="M 660 400 L 690 400 L 690 285 L 722 285" fill="none" stroke="#4A6FA5" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- 알림 → FastAPI (귀환 경로) -->
+  <path d="M 922 520 L 620 520 L 620 498" fill="none" stroke="#D98E2B" stroke-width="2.4" marker-end="url(#arrowAmber)"/>
+  <text x="700" y="510" font-size="12.5" font-weight="bold" fill="#B0721E">알림 발송(웹푸시·메일) · SSE 답변</text>
+
+  <!-- 사용자 ↔ FastAPI -->
+  <line x1="300" y1="400" x2="422" y2="400" stroke="#4A6FA5" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="361" y="388" font-size="12.5" fill="#4A6FA5" text-anchor="middle">질문 · 설정</text>
+  <text x="361" y="420" font-size="12.5" fill="#B0721E" text-anchor="middle">답변 · 알림</text>
+
+  <!-- 하단 인프라 3박스 -->
+  <rect x="700" y="660" width="290" height="140" rx="10" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="845" y="694" font-size="16" font-weight="bold" fill="#1B2A4A" text-anchor="middle">MCP 도구 서버</text>
+  <text x="845" y="722" font-size="12.5" fill="#33475E" text-anchor="middle">dart_search — 공시 조회</text>
+  <text x="845" y="744" font-size="12.5" fill="#33475E" text-anchor="middle">get_price — 시세 · news_search — 뉴스</text>
+  <text x="845" y="774" font-size="11.5" fill="#8A97A8" text-anchor="middle">공시 신규 게시 5분 주기 폴링(cron)</text>
+
+  <rect x="1020" y="660" width="280" height="140" rx="10" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="1160" y="694" font-size="16" font-weight="bold" fill="#1B2A4A" text-anchor="middle">vLLM 추론 서버</text>
+  <text x="1160" y="722" font-size="12.5" fill="#33475E" text-anchor="middle">오픈소스 LLM (Qwen / Gemma)</text>
+  <text x="1160" y="744" font-size="12.5" fill="#33475E" text-anchor="middle">온프레미스 · 폐쇄망 대응</text>
+  <text x="1160" y="774" font-size="11.5" fill="#8A97A8" text-anchor="middle">요약용 경량 모델 / 해석용 상위 모델 라우팅</text>
+
+  <rect x="1330" y="660" width="280" height="140" rx="10" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="1.5"/>
+  <text x="1470" y="694" font-size="16" font-weight="bold" fill="#1B2A4A" text-anchor="middle">데이터 저장소</text>
+  <text x="1470" y="722" font-size="12.5" fill="#33475E" text-anchor="middle">PostgreSQL + pgvector</text>
+  <text x="1470" y="744" font-size="12.5" fill="#33475E" text-anchor="middle">공시 원문 · 임베딩 벡터</text>
+  <text x="1470" y="774" font-size="12.5" fill="#33475E" text-anchor="middle">Redis — 세션 · 알림 큐</text>
+
+  <!-- 오케스트레이터 ↔ 하단 연결 -->
+  <line x1="845" y1="612" x2="845" y2="652" stroke="#4A6FA5" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="858" y="638" font-size="12" fill="#4A6FA5">도구 호출</text>
+  <line x1="1160" y1="612" x2="1160" y2="652" stroke="#4A6FA5" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="1173" y="638" font-size="12" fill="#4A6FA5">LLM 추론</text>
+  <line x1="1470" y1="612" x2="1470" y2="652" stroke="#4A6FA5" stroke-width="2" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text x="1483" y="638" font-size="12" fill="#4A6FA5">벡터 검색 · 세션</text>
+
+  <!-- 외부 API → MCP -->
+  <line x1="300" y1="725" x2="692" y2="725" stroke="#8A97A8" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrowGray)"/>
+  <text x="470" y="713" font-size="12.5" fill="#6B7A90">공시 · 시세 수집</text>
+
+  <!-- 범례 -->
+  <rect x="40" y="898" width="16" height="16" fill="#1B2A4A" rx="3"/>
+  <text x="64" y="911" font-size="13" fill="#33475E">사용자 · 외부 영역</text>
+  <rect x="230" y="898" width="16" height="16" fill="#FFFFFF" stroke="#4A6FA5" stroke-width="2" rx="3"/>
+  <text x="254" y="911" font-size="13" fill="#33475E">처리 컴포넌트</text>
+  <rect x="400" y="898" width="16" height="16" fill="#FBEED3" stroke="#D98E2B" stroke-width="2" rx="3"/>
+  <text x="424" y="911" font-size="13" fill="#33475E">알림 경로</text>
+  <rect x="530" y="898" width="16" height="16" fill="#F6E3E1" stroke="#C0504D" stroke-width="2" rx="3"/>
+  <text x="554" y="911" font-size="13" fill="#33475E">사람 개입(Human-in-the-loop)</text>
+  <rect x="790" y="898" width="16" height="16" fill="#F8FAFC" stroke="#9AA7B8" stroke-width="1.6" stroke-dasharray="4 3" rx="3"/>
+  <text x="814" y="911" font-size="13" fill="#33475E">쿠버네티스 배포 경계</text>
+</svg>

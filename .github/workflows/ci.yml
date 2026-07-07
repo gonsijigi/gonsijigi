@@ -1,0 +1,29 @@
+# 공시지기 CI — GitHub Actions (Gitea Actions 와 문법 호환)
+# 원칙: 시크릿은 파일이 아니라 Settings > Secrets 에 등록해 참조한다.
+name: gonsijigi-ci
+on:
+  push: { branches: [ main ] }
+  pull_request:
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: 의존성 설치
+        run: pip install -r requirements.txt
+      - name: 문법 검사 + 오프라인 스모크 테스트 (키 없이 폴백 모드로 동작)
+        run: |
+          python -m compileall -q app
+          python tests/test_smoke.py
+  docker-build:
+    needs: smoke-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 도커 이미지 빌드
+        run: docker build -f infra/Dockerfile -t gonsijigi:${{ github.sha }} .
+      # ----- 시크릿 등록 후 주석 해제: Harbor 푸시 → K8s 롤링 배포 -----
+      # - run: echo "${{ secrets.HARBOR_PASSWORD }}" | docker login harbor.example.com -u "${{ secrets.HARBOR_USER }}" --password-stdin
+      # - run: docker push ... && kubectl set image deployment/gonsijigi app=...
