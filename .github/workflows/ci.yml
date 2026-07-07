@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
+        with: { python-version: "3.13" }
       - name: 의존성 설치
         run: pip install -r requirements.txt
       - name: 문법 검사 + 오프라인 스모크 테스트 (키 없이 폴백 모드로 동작)
