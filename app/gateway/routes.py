@@ -6,11 +6,9 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app.agent import run_agent
+from app.gateway import watchlist, nav
 
 router = APIRouter()
-
-# 프로토타입: 김개미의 관심 종목 고정값 (실서비스: DB 조회)
-KIM_GAEMI_PORTFOLIO = ["005930", "247540", "035720"]
 
 
 class Ask(BaseModel):
@@ -21,7 +19,9 @@ class Ask(BaseModel):
 @router.post("/ask")
 async def ask(body: Ask):
     """답변을 SSE 로 스트리밍 — 사용자가 빈 화면을 기다리지 않게 한다."""
-    answer = await asyncio.to_thread(run_agent, body.user_id, body.question, KIM_GAEMI_PORTFOLIO)
+    # 관심종목은 watchlist(파일 저장)에서 읽어 온다 — 고정 상수 제거(D3)
+    codes = [it["code"] for it in watchlist.list_items()]
+    answer = await asyncio.to_thread(run_agent, body.user_id, body.question, codes)
 
     async def stream():
         for line in answer.split("\n"):
@@ -34,7 +34,10 @@ async def ask(body: Ask):
 
 @router.get("/", response_class=HTMLResponse)
 async def home():
-    return HOME_HTML
+    # 사용자 뷰 네비 주입 — HOME_HTML은 일반 문자열이라 f-string 변환 없이 replace
+    page = HOME_HTML.replace("</style>", nav.NAV_STYLE + "</style>", 1)
+    page = page.replace("<div class=wrap>", "<div class=wrap>" + nav.user_nav("home"), 1)
+    return page
 
 
 HOME_HTML = """<!doctype html><html lang=ko><head><meta charset=utf-8>

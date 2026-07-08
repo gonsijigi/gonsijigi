@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app.gateway.queue import (list_queue, pop_by_id,
                                deliver, list_notifications)
+from app.gateway import nav
 
 router = APIRouter(prefix="/admin")
 
@@ -72,7 +73,9 @@ async def review_queue():
   .btn-approve{{background:#1B7A4A;color:#fff;border:0;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:12px;margin-right:4px}}
   .btn-reject{{background:#A0291C;color:#fff;border:0;border-radius:6px;padding:5px 14px;cursor:pointer;font-size:12px}}
   .btn-approve:hover{{background:#155f3a}}.btn-reject:hover{{background:#7d1f16}}
+  {nav.NAV_STYLE}
 </style></head><body>
+{nav.admin_nav("admin")}
 <h1>컴플라이언스 검토 큐</h1>
 <p class="sub">고위험 공시는 승인 후 알림함으로 발송됩니다. 반려 시 폐기.</p>
 <table>
@@ -129,7 +132,9 @@ async def user_inbox():
          margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}}
   .meta{{color:#6B7A90;font-size:12px;margin-bottom:8px}}
   pre{{white-space:pre-wrap;font-size:13px;line-height:1.6;margin:0}}
+  {nav.NAV_STYLE}
 </style></head><body>
+{nav.admin_nav("inbox")}
 <h1>내 알림함 (승인 완료 발송분)</h1>
 {cards}
 </body></html>"""

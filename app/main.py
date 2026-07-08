@@ -4,8 +4,10 @@ from fastapi import FastAPI
 
 from app.gateway.routes import router as gateway_router
 from app.gateway.admin import router as admin_router
+from app.gateway.watchlist_routes import router as watchlist_router
 
 app = FastAPI(title="공시지기 MVP")
 app.include_router(gateway_router)
 app.include_router(admin_router)
+app.include_router(watchlist_router)
 # D3: app.tools.poller 의 5분 폴링 루프를 startup 이벤트로 연결
