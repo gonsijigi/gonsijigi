@@ -11,12 +11,15 @@ from app.agent.state import AgentState
 from app.agent.prompts import INTERPRET_STRUCT_PROMPT
 from app.llm.client import llm
 from app.rag.retriever import search_similar
+from app.tools.dart import get_document_text
+
+DOC_EXCERPT_CHARS = 1500  # 현재 공시 원문 발췌 길이 — 소형 LLM 컨텍스트 보호
 
 
 class Interpretation(BaseModel):
     """공시 해석 구조 — 단정 대신 '유형 + 사실 + 해석 참고'로 나눈다."""
     disclosure_type: str = Field(description="공시 유형을 짧게 (예: 유상증자, 자기주식취득, 타법인 지분취득)")
-    facts: List[str] = Field(description="공시 원문에 실제로 적힌 사실만 1~3개. 추측·수치 창작 금지")
+    facts: List[str] = Field(description="공시 원문 발췌에 실제로 적힌 사실만 1~3개 — 금액·주식수·발행가·목적 같은 구체 수치가 있으면 그것을 우선. 추측·수치 창작 금지")
     caution: str = Field(description="이 유형이 일반적으로 어떻게 해석되는지 + 단정하지 않는 주의 한 문장")
 
 
@@ -68,9 +71,20 @@ def interpret_node(state: AgentState) -> dict:
         for d in state["disclosures"]
     ]
 
+    d0 = state["disclosures"][0]
+
+    # 현재 공시의 '원문 발췌'를 근거로 주입 — [사실]이 제목이나 과거 유사 사례가 아니라
+    # 이 공시 자체(금액·방식·목적 등)에 접지되게 한다. 키 없음/호출 실패 시 빈 값 → 기존 동작.
+    try:
+        doc = get_document_text(d0.get("rcept_no", ""))
+    except Exception:
+        doc = ""
+    if doc:
+        context_lines.append(f"\n[현재 공시 원문 발췌 — {d0['corp_name']} / {d0['report_nm']}]")
+        context_lines.append(doc[:DOC_EXCERPT_CHARS])
+
     # 과거 유사 공시 근거 (RAG) — 사용자가 물은 종목/키워드가 있으면 그걸로 검색(질문 반영),
     # 없으면 첫 공시 기준으로 검색.
-    d0 = state["disclosures"][0]
     parsed_terms = " ".join(
         state.get("parsed_keywords", [])
         + [s["name"] for s in state.get("parsed_stocks", []) if s.get("name")]
