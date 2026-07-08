@@ -69,6 +69,14 @@ def test_parse_passes_plain_question():
     assert out["clarify"] is False
 
 
+def test_fetch_recent_window():
+    """'최근' 류 질문은 7일 창(시작일 반환), 그 외엔 당일(None)이어야 한다."""
+    from app.agent.nodes.fetch import _recent_window
+    assert _recent_window("SK하이닉스 최근 공시 해석해줘") is not None, "'최근' 미인식"
+    assert _recent_window("요즘 카카오 공시 있어?") is not None, "'요즘' 미인식"
+    assert _recent_window("오늘 내 종목 공시 뭐 있었어?") is None, "당일 질문에 창이 열림"
+
+
 def test_parse_case_insensitive_stock():
     """영문 포함 종목명은 대소문자 무시로 매칭돼야 한다(sk하이닉스=SK하이닉스).
     corp_names.json이 없으면 기본 3종목만 있어 스킵(폴백)."""
@@ -88,5 +96,6 @@ if __name__ == "__main__":
     test_parse_rejects_junk(); print("PASS parse-junk")
     test_parse_extracts_stock_and_keyword(); print("PASS parse-entity")
     test_parse_passes_plain_question(); print("PASS parse-plain")
+    test_fetch_recent_window(); print("PASS fetch-recent")
     test_parse_case_insensitive_stock(); print("PASS parse-case")
     print("SMOKE OK")
