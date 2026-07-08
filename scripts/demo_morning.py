@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from app.tools.dart import RISK_KEYWORDS  # 고위험 키워드 — 위험도 노드와 동일 기준
+from app.tools.categories import categorize  # 필수 5종 분류 — 폴러와 동일 기준
 
 MAX_ROWS = 15  # 스캔 출력 상한
 
@@ -92,11 +93,13 @@ def scan_today(api_key: str) -> None:
         if not stock:                     # 비상장 제외 — 관심종목 등록이 안 됨
             continue
         cls = str(row.get("corp_cls", "") or "")
+        report_nm = str(row.get("report_nm", ""))
         item = {"stock": stock,
                 "corp": str(row.get("corp_name", "")),
-                "report": str(row.get("report_nm", "")),
+                "report": report_nm,
                 "market": markets.get(cls, "기타"),
-                "kospi": cls == "Y"}
+                "kospi": cls == "Y",
+                "cat": categorize(report_nm)}   # 5종이면 폴러가 알림으로 잡는 대상
         hits = [k for k in RISK_KEYWORDS if k in item["report"]]
         (risky if hits else normal).append((item, hits))
 
@@ -110,7 +113,8 @@ def scan_today(api_key: str) -> None:
     print("  ── 시연 등록 후보 (⚠️=고위험 → HITL 라이브 가능, 코스피 우선) ──")
     for item, hits in (risky + normal)[:MAX_ROWS]:
         mark = f"⚠️ [{','.join(hits)}] " if hits else ""
-        print(f"   {mark}[{item['market']}] {item['stock']}  {item['corp']} — {item['report']}")
+        cat = f"[{item['cat']}] " if item.get("cat") else ""
+        print(f"   {mark}{cat}[{item['market']}] {item['stock']}  {item['corp']} — {item['report']}")
     if total > MAX_ROWS:
         print(f"   ... 외 {total - MAX_ROWS}건 생략")
 
