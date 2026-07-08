@@ -78,18 +78,24 @@ def main():
             "rcept_dt": it["rcept_dt"],
             "summary": f"{it['rcept_dt']} 접수 — 상세는 원문 링크 참고",
         }
+        row["_cls"] = it.get("corp_cls", "")   # Y=코스피 K=코스닥 (정렬·라벨용, 저장 전 제거)
         (risky if any(k in it["report_nm"] for k in RISK) else normal).append(row)
+    # 시연 가시성: 코스피(Y) 상장사를 앞으로 (그룹 내 원래 순서 유지)
+    risky.sort(key=lambda r: r["_cls"] != "Y")
+    normal.sort(key=lambda r: r["_cls"] != "Y")
     result = risky + normal[:MAX_NORMAL]
+    markets = {"Y": "코스피", "K": "코스닥", "N": "코넥스"}
+    labels = {r["rcept_no"]: markets.get(r.pop("_cls"), "기타") for r in risky + normal}
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=2)
 
     print(f"저장 완료: {OUTPUT_PATH}  (고위험 {len(risky)} + 일반 {min(len(normal), MAX_NORMAL)} = {len(result)}건)")
-    print("데모 등록 후보 (⚠️=고위험 → HITL 시연 가능):")
+    print("데모 등록 후보 (⚠️=고위험 → HITL 시연 가능, 코스피 우선):")
     for r in result[:8]:
         mark = "⚠️ " if any(k in r["report_nm"] for k in RISK) else "   "
-        print(f"  {mark}{r['stock_code']}  {r['corp_name']} — {r['report_nm'][:38]}")
+        print(f"  {mark}[{labels.get(r['rcept_no'], '?')}] {r['stock_code']}  {r['corp_name']} — {r['report_nm'][:34]}")
 
 
 if __name__ == "__main__":

@@ -85,23 +85,32 @@ def scan_today(api_key: str) -> None:
         print("  오늘 공시 없음(아직 이른 시각일 수 있음) → 늦게 재시도하거나 리플레이 모드로")
         return
 
+    markets = {"Y": "코스피", "K": "코스닥", "N": "코넥스"}
     risky, normal = [], []
     for _, row in listing.iterrows():
         stock = str(row.get("stock_code", "") or "").strip()
         if not stock:                     # 비상장 제외 — 관심종목 등록이 안 됨
             continue
+        cls = str(row.get("corp_cls", "") or "")
         item = {"stock": stock,
                 "corp": str(row.get("corp_name", "")),
-                "report": str(row.get("report_nm", ""))}
+                "report": str(row.get("report_nm", "")),
+                "market": markets.get(cls, "기타"),
+                "kospi": cls == "Y"}
         hits = [k for k in RISK_KEYWORDS if k in item["report"]]
         (risky if hits else normal).append((item, hits))
 
+    # 시연 가시성: 코스피 상장사를 앞으로 (그룹 내 원래 순서 유지)
+    risky.sort(key=lambda x: not x[0]["kospi"])
+    normal.sort(key=lambda x: not x[0]["kospi"])
+
     total = len(risky) + len(normal)
-    print(f"  상장사 공시 {total}건 (고위험 후보 {len(risky)}건)")
-    print("  ── 시연 등록 후보 (⚠️=고위험 → HITL 장면을 라이브로 가능) ──")
+    kospi_n = sum(1 for i, _ in risky + normal if i["kospi"])
+    print(f"  상장사 공시 {total}건 (고위험 {len(risky)}건 · 코스피 {kospi_n}건)")
+    print("  ── 시연 등록 후보 (⚠️=고위험 → HITL 라이브 가능, 코스피 우선) ──")
     for item, hits in (risky + normal)[:MAX_ROWS]:
         mark = f"⚠️ [{','.join(hits)}] " if hits else ""
-        print(f"   {mark}{item['stock']}  {item['corp']} — {item['report']}")
+        print(f"   {mark}[{item['market']}] {item['stock']}  {item['corp']} — {item['report']}")
     if total > MAX_ROWS:
         print(f"   ... 외 {total - MAX_ROWS}건 생략")
 
