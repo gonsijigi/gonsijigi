@@ -15,12 +15,28 @@ from app.tools.dart import get_document_text
 
 DOC_EXCERPT_CHARS = 1500  # 현재 공시 원문 발췌 길이 — 소형 LLM 컨텍스트 보호
 
+# '무엇을 위한 돈인가'가 해석의 핵심 — 원문에서 자금 목적 구간을 찾아 발췌에 반드시 포함한다
+_PURPOSE_KEYS = ("조달자금의 구체적 사용목적", "자금조달의 목적", "사용목적")
+
+
+def _doc_excerpt(doc: str) -> str:
+    """원문 머리(개요·정정사항) + 자금 목적 구간을 함께 발췌.
+    목적 구간이 앞부분에 이미 포함돼 있으면 그대로 머리만 쓴다."""
+    head = doc[:1000]
+    for kw in _PURPOSE_KEYS:
+        i = doc.find(kw)
+        if 0 <= i <= 800:                     # 이미 머리 발췌에 포함됨
+            break
+        if i > 800:
+            return f"{head}\n…\n[{kw}]\n{doc[i:i + 900]}"
+    return doc[:DOC_EXCERPT_CHARS]
+
 
 class Interpretation(BaseModel):
     """공시 해석 구조 — 단정 대신 '유형 + 사실 + 해석 참고'로 나눈다."""
     disclosure_type: str = Field(description="공시 유형을 짧게 (예: 유상증자, 자기주식취득, 타법인 지분취득)")
     facts: List[str] = Field(description="공시 원문 발췌에 실제로 적힌 사실만 1~3개 — 금액·주식수·발행가·목적 같은 구체 수치가 있으면 그것을 우선. 추측·수치 창작 금지")
-    caution: str = Field(description="이 유형이 일반적으로 어떻게 해석되는지 + 단정하지 않는 주의 한 문장")
+    caution: str = Field(description="이 유형이 일반적으로 어떻게 해석되는지 한두 문장 — 원문에 자금 사용목적(시설투자·운영자금 등)이 있으면 그 목적을 근거로 '일반적으로 ~로 해석되는 경우가 많다'고 조건부 서술. 호재/악재 단정 금지")
 
 
 _parser = PydanticOutputParser(pydantic_object=Interpretation)
@@ -85,7 +101,7 @@ def interpret_node(state: AgentState) -> dict:
         doc = ""
     if doc:
         context_lines.append(f"\n[현재 공시 원문 발췌 — {d0['corp_name']} / {d0['report_nm']}]")
-        context_lines.append(doc[:DOC_EXCERPT_CHARS])
+        context_lines.append(_doc_excerpt(doc))
 
     # 과거 유사 공시 근거 (RAG) — 사용자가 물은 종목/키워드가 있으면 그걸로 검색(질문 반영),
     # 없으면 첫 공시 기준으로 검색.
