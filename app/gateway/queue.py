@@ -49,6 +49,7 @@ def deliver(item: dict) -> None:
         "corp_name":      item.get("corp_name", ""),
         "report_nm":      item.get("report_nm", ""),
         "rcept_no":       item.get("rcept_no", ""),
+        "interpretation": item.get("interpretation", ""),  # 알림 펼침용 해석
         "card":           item.get("card", ""),
         "delivered_at":   datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     })
