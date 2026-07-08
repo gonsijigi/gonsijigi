@@ -10,28 +10,46 @@ import xml.etree.ElementTree as ET
 import requests
 
 CORP_MAP_PATH = "data/corp_map.json"
+CORP_NAMES_PATH = "data/corp_names.json"   # {회사명: 종목코드} — parse_node의 종목명 매칭용
 
 def build_corp_map(api_key: str) -> dict[str, str]:
-    """고유번호 전체 파일(zip 속 XML)을 내려받아 {종목코드: 고유번호}로 저장. 하루 1회면 충분."""
+    """고유번호 전체 파일(zip 속 XML)을 내려받아 두 인덱스를 저장. 하루 1회면 충분.
+    - corp_map.json:   {종목코드: 고유번호}  (DART 단일종목 조회용)
+    - corp_names.json: {회사명: 종목코드}    (질문에서 종목명 파싱용)
+    """
     url = "https://opendart.fss.or.kr/api/corpCode.xml"
     res = requests.get(url, params={"crtfc_key": api_key}, timeout=30)
     res.raise_for_status()                      # HTTP 오류면 즉시 예외로 알림
     with zipfile.ZipFile(io.BytesIO(res.content)) as zf:
         xml_bytes = zf.read(zf.namelist()[0])   # zip 안의 CORPCODE.xml 한 장
     root = ET.fromstring(xml_bytes)
-    mapping = {}
+    mapping: dict[str, str] = {}
+    names: dict[str, str] = {}
     for item in root.iter("list"):              # 회사 한 곳 = <list> 하나
         stock = (item.findtext("stock_code") or "").strip()
         if stock:                               # 비상장은 종목코드가 빈칸 → 건너뜀
             mapping[stock] = item.findtext("corp_code")
+            name = (item.findtext("corp_name") or "").strip()
+            if name:
+                names[name] = stock             # 상장사 이름 → 종목코드
     os.makedirs("data", exist_ok=True)
     with open(CORP_MAP_PATH, "w", encoding="utf-8") as f:
         json.dump(mapping, f, ensure_ascii=False)
+    with open(CORP_NAMES_PATH, "w", encoding="utf-8") as f:
+        json.dump(names, f, ensure_ascii=False)
     return mapping
 
 def get_corp_code(stock_code: str) -> str | None:
     with open(CORP_MAP_PATH, encoding="utf-8") as f:
         return json.load(f).get(stock_code)
+
+def load_corp_names() -> dict[str, str]:
+    """{회사명: 종목코드} 반환. 파일이 없으면 빈 dict(파싱은 watchlist 이름으로 폴백)."""
+    try:
+        with open(CORP_NAMES_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 # 고위험 공시 키워드 — 위험도 판단 노드에서 사용 (보고서 6.6절)
 RISK_KEYWORDS = ["유상증자", "감사의견", "거래정지", "불성실공시", "상장폐지", "회생절차"]
 
@@ -68,12 +86,14 @@ def get_document_text(rcept_no: str) -> str:
         return ""
     dart = OpenDartReader(api_key)
     try:
-        raw_docs = dart.document_all(rcept_no)
+        # OpenDartReader 0.1.6에는 document_all 이 없다 → document(단일 문서 문자열) 사용.
+        raw = dart.document(rcept_no)
     except Exception as e:
-        print(f"[경고] document_all 실패: {e.__class__.__name__}")
+        print(f"[경고] document 실패: {e.__class__.__name__}")
         return ""
-    if not raw_docs:
+    if not raw:
         return ""
+    raw_docs = raw if isinstance(raw, list) else [raw]  # 문자열/리스트 모두 처리
 
     parts: list[str] = []
     for doc in raw_docs:

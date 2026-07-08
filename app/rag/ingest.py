@@ -16,6 +16,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import OpenDartReader
+
+# 호환 shim: OpenDartReader 0.1.6은 pandas 1.x의 DataFrame.append()를 쓰는데
+# pandas 2.0에서 이 메서드가 삭제됨 → list() 호출이 전부 실패한다.
+# 삭제된 append를 pd.concat 기반으로 되살려 적재만 정상 동작하게 한다(라이브러리 우회).
+import pandas as _pd
+if not hasattr(_pd.DataFrame, "append"):
+    def _df_append(self, other, ignore_index=False, **_kw):
+        if isinstance(other, dict):
+            other = _pd.DataFrame([other])
+        elif isinstance(other, _pd.Series):
+            other = other.to_frame().T
+        return _pd.concat([self, other], ignore_index=ignore_index)
+    _pd.DataFrame.append = _df_append
+
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_ollama import OllamaEmbeddings
