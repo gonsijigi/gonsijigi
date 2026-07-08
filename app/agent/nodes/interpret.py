@@ -1,8 +1,57 @@
-"""[노드] RAG 해석 생성 — 근거에 없는 말은 하지 않는다(오픈북 원칙)."""
+"""[노드] RAG 해석 생성 — 근거에 없는 말은 하지 않는다(오픈북 원칙).
+해석은 LangChain OutputParser로 유형/사실/주의 3필드로 구조화한다(파싱 실패 시 원문 폴백)."""
+import json
+import re
+from typing import List
+
+from pydantic import BaseModel, Field
+from langchain_core.output_parsers import PydanticOutputParser
+
 from app.agent.state import AgentState
-from app.agent.prompts import INTERPRET_PROMPT
+from app.agent.prompts import INTERPRET_STRUCT_PROMPT
 from app.llm.client import llm
 from app.rag.retriever import search_similar
+
+
+class Interpretation(BaseModel):
+    """공시 해석 구조 — 단정 대신 '유형 + 사실 + 해석 참고'로 나눈다."""
+    disclosure_type: str = Field(description="공시 유형을 짧게 (예: 유상증자, 자기주식취득, 타법인 지분취득)")
+    facts: List[str] = Field(description="공시 원문에 실제로 적힌 사실만 1~3개. 추측·수치 창작 금지")
+    caution: str = Field(description="이 유형이 일반적으로 어떻게 해석되는지 + 단정하지 않는 주의 한 문장")
+
+
+_parser = PydanticOutputParser(pydantic_object=Interpretation)
+
+
+def _clean(text: str) -> str:
+    """gemma 계열이 흘리는 공백 마커(▁)·코드펜스(```json)를 제거해 읽히게 만든다."""
+    t = text.replace("▁", " ")            # SentencePiece 공백 마커
+    t = re.sub(r"```(?:json)?", "", t)          # 코드블록 표시 제거
+    return t.strip()
+
+
+def _to_struct(text: str):
+    """구조화 시도 — 표준 파서 → 실패하면 관대한 보정(펜스·마커 제거 후 JSON 추출)."""
+    try:
+        return _parser.parse(text)
+    except Exception:
+        pass
+    cleaned = _clean(text)
+    m = re.search(r"\{.*\}", cleaned, re.S)     # 첫 JSON 객체
+    if m:
+        try:
+            data = json.loads(m.group(0))
+            if isinstance(data.get("facts"), str):   # 사실이 문자열이면 리스트로
+                data["facts"] = [data["facts"]]
+            return Interpretation(**data)
+        except Exception:
+            pass
+    return None
+
+
+def _render(o: "Interpretation") -> str:
+    facts = "\n".join(f"· {f}" for f in o.facts) if o.facts else "· 상세는 원문 참고"
+    return f"[유형] {o.disclosure_type}\n[사실]\n{facts}\n[해석 참고] {o.caution}"
 
 
 def interpret_node(state: AgentState) -> dict:
@@ -39,6 +88,12 @@ def interpret_node(state: AgentState) -> dict:
 
     rule_based = "(LLM 연결 실패 — 원문 요약으로 대체) " + " / ".join(
         d["summary"] for d in state["disclosures"])
-    text = llm(INTERPRET_PROMPT.format(context=context, q=state["user_input"]),
-               fallback=rule_based)
-    return {"interpretation": text}
+    prompt = INTERPRET_STRUCT_PROMPT.format(
+        format_instructions=_parser.get_format_instructions(),
+        context=context, q=state["user_input"])
+    text = llm(prompt, fallback=rule_based)
+    # 구조화 시도 → 실패해도 최소한 ▁·코드펜스는 벗겨 읽히게(지저분한 원문 노출 방지).
+    o = _to_struct(text)
+    if o:
+        return {"interpretation": _render(o)}
+    return {"interpretation": _clean(text)}
