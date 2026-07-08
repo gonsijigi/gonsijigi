@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.tools import redact, build_notification
 from app.agent import run_agent
+from app.agent.nodes import risk_node
 
 
 def test_redact_masks_secrets():
@@ -23,8 +24,35 @@ def test_guardrail_blocks_trading_advice():
     assert "매수·매도 판단" in out, "가드레일 미동작"
 
 
+def test_risk_picks_actual_high_risk_disclosure():
+    """P1 회귀 방지: 고위험 공시가 첫 번째가 아니어도, 실제로 걸린 '그 공시'가
+    HITL 검토 대상(review_disclosure)으로 선택돼야 한다. (엉뚱한 공시가 큐에 들어가면 안 됨)"""
+    state = {"disclosures": [
+        {"corp_name": "삼성전자", "report_nm": "주식등의대량보유상황보고서",
+         "rcept_no": "1", "rcept_dt": "20260101", "summary": "-"},
+        {"corp_name": "에코프로비엠", "report_nm": "유상증자결정",
+         "rcept_no": "2", "rcept_dt": "20260101", "summary": "-"},
+    ]}
+    out = risk_node(state)
+    assert out["risk_level"] == "high", "고위험 미탐지"
+    assert out["review_disclosure"]["corp_name"] == "에코프로비엠", "엉뚱한 공시 선택"
+    assert "유상증자" in out["risk_keywords"], "위험 키워드 누락"
+
+
+def test_risk_normal_when_no_keyword():
+    """일반 공시만 있으면 normal — HITL로 새지 않아야 한다."""
+    state = {"disclosures": [
+        {"corp_name": "카카오", "report_nm": "임원ㆍ주요주주특정증권등소유상황보고서",
+         "rcept_no": "3", "rcept_dt": "20260101", "summary": "-"},
+    ]}
+    out = risk_node(state)
+    assert out["risk_level"] == "normal" and out["review_disclosure"] is None
+
+
 if __name__ == "__main__":
     test_redact_masks_secrets(); print("PASS redact")
     test_notification_has_source_and_disclaimer(); print("PASS notification")
     test_guardrail_blocks_trading_advice(); print("PASS guardrail")
+    test_risk_picks_actual_high_risk_disclosure(); print("PASS risk-select")
+    test_risk_normal_when_no_keyword(); print("PASS risk-normal")
     print("SMOKE OK")

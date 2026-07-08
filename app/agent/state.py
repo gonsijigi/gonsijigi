@@ -8,6 +8,7 @@ class AgentState(TypedDict):
     disclosures: list
     interpretation: str
     risk_level: str          # "normal" | "high"
-    risk_keywords: list      # risk_node가 disclosures[0]에서 찾은 키워드 — hitl_node에서 재사용
+    risk_keywords: list      # risk_node가 실제 걸린 공시에서 찾은 키워드 — hitl_node에서 재사용
+    review_disclosure: Optional[dict]  # 고위험으로 걸린 실제 공시 — hitl_node가 큐에 넣음
     blocked: bool
     response: Optional[str]

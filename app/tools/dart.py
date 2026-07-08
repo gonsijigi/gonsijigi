@@ -1,6 +1,7 @@
 """[아키텍처 박스: MCP 도구 서버] dart_search — 공시 조회.
 프로토타입은 mock, 실제 DART OpenAPI 호출 코드는 아래 docstring 참고.
 여유가 생기면 FastMCP 서버로 분리한다(수업 MCP 실습 패턴)."""
+from __future__ import annotations  # PEP604(str | None) 어노테이션을 3.9에서도 허용
 from datetime import datetime
 # --- corpCode 매핑: 종목코드(6자리) ↔ DART 고유번호(8자리) 전화번호부 ---
 import io, json, os, zipfile
