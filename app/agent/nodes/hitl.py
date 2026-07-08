@@ -6,7 +6,8 @@ from app.gateway.queue import enqueue
 
 
 def hitl_node(state: AgentState) -> dict:
-    d = state["disclosures"][0]
+    # risk_node가 지목한 '실제 고위험 공시'를 큐에 넣는다(없으면 방어적으로 첫 공시).
+    d = state.get("review_disclosure") or state["disclosures"][0]
     card = build_notification(d["corp_name"], d["report_nm"],
                               state["interpretation"], d["rcept_no"])
     enqueue({

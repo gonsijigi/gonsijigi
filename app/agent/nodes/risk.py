@@ -4,9 +4,16 @@ from app.tools import RISK_KEYWORDS
 
 
 def risk_node(state: AgentState) -> dict:
-    joined = " ".join(d["report_nm"] for d in state["disclosures"])
-    level = "high" if any(k in joined for k in RISK_KEYWORDS) else "normal"
-    # 키워드는 disclosures[0] 기준 — 큐에 들어가는 공시와 범위를 일치시킨다
-    first_nm = state["disclosures"][0]["report_nm"] if state["disclosures"] else ""
-    triggered = [k for k in RISK_KEYWORDS if k in first_nm]
-    return {"risk_level": level, "risk_keywords": triggered}
+    # 실제로 고위험 키워드가 걸린 '그 공시'를 찾아 HITL 경로로 넘긴다.
+    # (첫 번째 공시가 아니라 걸린 공시를 사용해야 엉뚱한 공시가 큐에 들어가지 않음)
+    review = None
+    triggered: list[str] = []
+    for d in state["disclosures"]:
+        hits = [k for k in RISK_KEYWORDS if k in d["report_nm"]]
+        if hits:
+            review = d
+            triggered = hits
+            break
+    level = "high" if review else "normal"
+    return {"risk_level": level, "risk_keywords": triggered,
+            "review_disclosure": review}
