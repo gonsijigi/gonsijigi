@@ -5,4 +5,5 @@ __pycache__/
 venv/
 .DS_Store
 data/corp_map.json
+data/watchlist.json
 docs_cache/
