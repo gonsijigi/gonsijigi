@@ -131,7 +131,9 @@ def _replay_search(stock_code: str) -> list[dict]:
         pool = json.load(f)
     items = [d for d in pool if d.get("stock_code") == stock_code]
     if not items:
-        items = pool  # 종목 필터 매칭 없으면 전체를 순환
+        # 리플레이 샘플에 없는 종목 → '오늘 공시 없음'. 전체 풀을 대신 돌려주면
+        # 엉뚱한 회사가 그 종목인 척 반환돼 버린다(삼성SDS 질문에 카카오가 뜨던 버그).
+        return []
     idx = _replay_index.get(stock_code, 0) % len(items)
     _replay_index[stock_code] = idx + 1
     picked = items[idx]
