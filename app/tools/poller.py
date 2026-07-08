@@ -9,7 +9,8 @@
 """
 from __future__ import annotations
 
-from app.tools.dart import dart_search, RISK_KEYWORDS
+from app.tools.dart import dart_search, get_document_text, RISK_KEYWORDS
+from app.tools.categories import categorize, classify_purpose
 from app.tools.notify_format import build_notification
 from app.gateway.queue import deliver, enqueue
 from app.gateway import watchlist
@@ -18,9 +19,10 @@ POLL_INTERVAL_SEC = 300          # (A) 자동 루프용 — 현재는 수동 트
 _seen: set[str] = set()          # 이미 처리한 rcept_no — 폴링마다 재알림 방지
 
 
-def _interpret_stub(corp_name: str, report_nm: str) -> str:
+def _interpret_stub(corp_name: str, report_nm: str, purpose: str | None = None) -> str:
     """폴러 전용 경량 안내(무LLM). 상세 해석은 대화(/ask)에서 제공한다."""
-    return f"{corp_name}의 '{report_nm}' 공시가 접수되었습니다. 원문에서 상세 내용을 확인하세요."
+    base = f"{corp_name}의 '{report_nm}' 공시가 접수되었습니다. 원문에서 상세 내용을 확인하세요."
+    return f"{base}\n자금조달: {purpose}" if purpose else base
 
 
 def poll_watchlist() -> dict:
@@ -29,7 +31,7 @@ def poll_watchlist() -> dict:
     Returns:
         {"new": 신규건수, "delivered": 알림함건수, "queued": 검토큐건수, "items": [...]}.
     """
-    delivered = queued = 0
+    delivered = queued = skipped = 0
     items_out: list[dict] = []
     for it in watchlist.list_items():
         code = it.get("code", "")
@@ -42,20 +44,36 @@ def poll_watchlist() -> dict:
             corp = d.get("corp_name") or wl_name
             report = d.get("report_nm", "")
             hits = [k for k in RISK_KEYWORDS if k in report]
-            interp = _interpret_stub(corp, report)
+            cat = categorize(report)
+            # '필수 5종'만 추려 알림 — 단 고위험은 카테고리와 무관하게 항상 검토 큐로
+            if not hits and cat is None:
+                skipped += 1
+                continue
+            # 유상증자는 원문에서 자금 목적을 읽어 라벨 (실패 시 라벨 생략 — 지어내지 않음)
+            purpose = None
+            if cat == "유상증자":
+                try:
+                    purpose = classify_purpose(get_document_text(rcept))
+                except Exception:
+                    purpose = None
+            interp = _interpret_stub(corp, report, purpose)
             card = build_notification(corp, report, interp, rcept)
             if hits:                                  # 고위험 → 검토 큐(승인 후 발송)
                 enqueue({
                     "corp_name": corp, "report_nm": report, "rcept_no": rcept,
                     "rcept_dt": d.get("rcept_dt", ""), "interpretation": interp,
                     "risk_keywords": hits, "card": card,
+                    "category": cat or "", "purpose": purpose or "",
                 })
                 queued += 1
-                items_out.append({"corp_name": corp, "report_nm": report, "route": "review"})
-            else:                                     # 일반 → 알림함 직행
+                items_out.append({"corp_name": corp, "report_nm": report,
+                                  "category": cat, "route": "review"})
+            else:                                     # 일반(5종) → 알림함 직행
                 deliver({"corp_name": corp, "report_nm": report, "rcept_no": rcept,
-                         "interpretation": interp, "card": card})
+                         "interpretation": interp, "card": card,
+                         "category": cat or "", "purpose": purpose or ""})
                 delivered += 1
-                items_out.append({"corp_name": corp, "report_nm": report, "route": "alert"})
+                items_out.append({"corp_name": corp, "report_nm": report,
+                                  "category": cat, "route": "alert"})
     return {"new": delivered + queued, "delivered": delivered,
-            "queued": queued, "items": items_out}
+            "queued": queued, "skipped": skipped, "items": items_out}

@@ -137,7 +137,7 @@ if(!items||!items.length){box.innerHTML='<div class="alert-empty">아직 도착�
 const grew=items.length>_alertN;box.innerHTML='';
 items.slice().reverse().forEach(function(it,i){
 const d=document.createElement('div');d.className='alert'+(grew&&i===0?' new':'');
-const co=document.createElement('div');co.className='co';co.textContent=it.corp_name||'';
+const co=document.createElement('div');co.className='co';co.textContent=(it.category?'['+it.category+'] ':'')+(it.corp_name||'');
 const rn=document.createElement('div');rn.className='rn';rn.textContent=it.report_nm||'';
 const ts=document.createElement('div');ts.className='ts';ts.textContent=it.delivered_at||'';
 const left=document.createElement('div');left.appendChild(co);left.appendChild(rn);left.appendChild(ts);

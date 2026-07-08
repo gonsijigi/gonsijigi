@@ -80,9 +80,10 @@ def main():
         }
         row["_cls"] = it.get("corp_cls", "")   # Y=코스피 K=코스닥 (정렬·라벨용, 저장 전 제거)
         (risky if any(k in it["report_nm"] for k in RISK) else normal).append(row)
-    # 시연 가시성: 코스피(Y) 상장사를 앞으로 (그룹 내 원래 순서 유지)
+    # 시연 가시성: 일반은 '필수 5종' 우선 → 코스피(Y) 우선 (그룹 내 원래 순서 유지)
+    from app.tools.categories import categorize
     risky.sort(key=lambda r: r["_cls"] != "Y")
-    normal.sort(key=lambda r: r["_cls"] != "Y")
+    normal.sort(key=lambda r: (categorize(r["report_nm"]) is None, r["_cls"] != "Y"))
     result = risky + normal[:MAX_NORMAL]
     markets = {"Y": "코스피", "K": "코스닥", "N": "코넥스"}
     labels = {r["rcept_no"]: markets.get(r.pop("_cls"), "기타") for r in risky + normal}
