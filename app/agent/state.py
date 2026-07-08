@@ -5,6 +5,9 @@ from typing import TypedDict, Optional
 class AgentState(TypedDict):
     user_input: str
     stock_codes: list
+    parsed_stocks: list      # parse_node가 질문에서 뽑은 종목 [{code, name}, ...]
+    parsed_keywords: list    # parse_node가 질문에서 뽑은 키워드(유상증자 등)
+    clarify: bool            # 무의미 입력 → 되묻기 후 종료
     disclosures: list
     interpretation: str
     risk_level: str          # "normal" | "high"

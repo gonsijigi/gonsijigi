@@ -5,12 +5,16 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import InMemorySaver
 
 from app.agent.state import AgentState
-from app.agent.nodes import (guardrail_node, fetch_node, interpret_node,
-                             risk_node, notify_node, hitl_node)
+from app.agent.nodes import (guardrail_node, parse_node, fetch_node,
+                             interpret_node, risk_node, notify_node, hitl_node)
 
 
 def route_guard(state: AgentState) -> str:
     return "blocked" if state["blocked"] else "pass"
+
+
+def route_parse(state: AgentState) -> str:
+    return "clarify" if state.get("clarify") else "ok"
 
 
 def route_risk(state: AgentState) -> str:
@@ -19,6 +23,7 @@ def route_risk(state: AgentState) -> str:
 
 workflow = StateGraph(AgentState)
 workflow.add_node("guardrail", guardrail_node)
+workflow.add_node("parse", parse_node)
 workflow.add_node("fetch", fetch_node)
 workflow.add_node("interpret", interpret_node)
 workflow.add_node("risk", risk_node)
@@ -26,7 +31,8 @@ workflow.add_node("notify", notify_node)
 workflow.add_node("hitl", hitl_node)
 
 workflow.add_edge(START, "guardrail")
-workflow.add_conditional_edges("guardrail", route_guard, {"pass": "fetch", "blocked": END})
+workflow.add_conditional_edges("guardrail", route_guard, {"pass": "parse", "blocked": END})
+workflow.add_conditional_edges("parse", route_parse, {"ok": "fetch", "clarify": END})
 workflow.add_edge("fetch", "interpret")
 workflow.add_edge("interpret", "risk")
 workflow.add_conditional_edges("risk", route_risk, {"normal": "notify", "high": "hitl"})
@@ -41,6 +47,7 @@ def run_agent(user_id: str, question: str, stock_codes: list) -> str:
     config = {"configurable": {"thread_id": f"user_{user_id}"}}
     result = app_graph.invoke(
         {"user_input": question, "stock_codes": stock_codes,
+         "parsed_stocks": [], "parsed_keywords": [], "clarify": False,
          "disclosures": [], "interpretation": "", "risk_level": "normal",
          "risk_keywords": [], "review_disclosure": None,
          "blocked": False, "response": None},
