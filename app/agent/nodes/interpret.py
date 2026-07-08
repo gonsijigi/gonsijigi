@@ -60,10 +60,14 @@ def _render(o: "Interpretation") -> str:
 def interpret_node(state: AgentState) -> dict:
     if not state["disclosures"]:
         # 특정 종목을 물었으면 그 종목명을 짚어 정직하게 답한다(관심종목으로 얼버무리지 않음).
+        # 리플레이 모드는 '샘플에 있는 종목만' 재생되므로, 그 사실을 밝혀 혼동을 막는다.
+        from app.core.config import REPLAY_MODE
+        hint = ("\n(지금은 리플레이 모드예요 — 데모 샘플에 없는 종목은 조회되지 않습니다. "
+                "실데이터 조회는 라이브 모드로 실행하세요.)") if REPLAY_MODE else ""
         asked = ", ".join(s["name"] for s in state.get("parsed_stocks", []) if s.get("name"))
         if asked:
-            return {"interpretation": f"{asked}에 오늘 접수된 새 공시가 없습니다."}
-        return {"interpretation": "오늘 등록하신 관심 종목에 새 공시가 없습니다."}
+            return {"interpretation": f"{asked}에 조회 기간 내 새 공시가 없습니다.{hint}"}
+        return {"interpretation": f"등록하신 관심 종목에 조회 기간 내 새 공시가 없습니다.{hint}"}
 
     # 현재 공시 컨텍스트
     context_lines = [
