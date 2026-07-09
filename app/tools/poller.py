@@ -41,14 +41,17 @@ def poll_watchlist() -> dict:
             if not rcept or rcept in _seen:          # 이미 본 공시는 건너뜀
                 continue
             _seen.add(rcept)
-            corp = d.get("corp_name") or wl_name
-            report = d.get("report_nm", "")
+            corp = (d.get("corp_name") or wl_name).strip()
+            # DART report_nm엔 꼬리 공백이 그대로 옴 → pre-wrap 화면에서 가로 넘침 유발, 정리
+            report = " ".join(d.get("report_nm", "").split())
             hits = [k for k in RISK_KEYWORDS if k in report]
             cat = categorize(report)
             # '필수 5종'만 추려 알림 — 단 고위험은 카테고리와 무관하게 항상 검토 큐로
             if not hits and cat is None:
                 skipped += 1
                 continue
+            # 뱃지: 5종 카테고리 우선, 없으면 걸린 위험 키워드(거래정지 등)를 뱃지로
+            badge = cat or (hits[0] if hits else "")
             # 유상증자는 원문에서 자금 목적을 읽어 라벨 (실패 시 라벨 생략 — 지어내지 않음)
             purpose = None
             if cat == "유상증자":
@@ -63,7 +66,7 @@ def poll_watchlist() -> dict:
                     "corp_name": corp, "report_nm": report, "rcept_no": rcept,
                     "rcept_dt": d.get("rcept_dt", ""), "interpretation": interp,
                     "risk_keywords": hits, "card": card,
-                    "category": cat or "", "purpose": purpose or "",
+                    "category": badge, "purpose": purpose or "",
                 })
                 queued += 1
                 items_out.append({"corp_name": corp, "report_nm": report,
@@ -71,7 +74,7 @@ def poll_watchlist() -> dict:
             else:                                     # 일반(5종) → 알림함 직행
                 deliver({"corp_name": corp, "report_nm": report, "rcept_no": rcept,
                          "interpretation": interp, "card": card,
-                         "category": cat or "", "purpose": purpose or ""})
+                         "category": badge, "purpose": purpose or ""})
                 delivered += 1
                 items_out.append({"corp_name": corp, "report_nm": report,
                                   "category": cat, "route": "alert"})
