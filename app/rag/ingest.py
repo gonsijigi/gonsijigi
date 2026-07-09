@@ -148,9 +148,9 @@ def store_documents(docs: list[Document], clear: bool = False):
     if clear:
         print("기존 테이블 삭제 후 재생성...")
         try:
-            engine.drop_vectorstore_table(TABLE_NAME)
-        except Exception:
-            pass
+            engine.drop_table(TABLE_NAME)   # 이 버전의 올바른 메서드(drop_vectorstore_table 없음)
+        except Exception as e:
+            print(f"  (drop 건너뜀: {e.__class__.__name__})")
 
     engine.init_vectorstore_table(table_name=TABLE_NAME, vector_size=VECTOR_SIZE)
 
