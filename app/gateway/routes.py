@@ -58,6 +58,7 @@ async def home():
 
 
 HOME_HTML = """<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기</title><style>
 body{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}
 .wrap{max-width:680px;margin:0 auto}h1{color:#1B2A4A;font-size:22px}

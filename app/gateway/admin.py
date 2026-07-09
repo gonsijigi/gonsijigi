@@ -55,6 +55,7 @@ async def review_queue():
             </tr>"""
 
     page = f"""<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기 — 컴플라이언스 검토</title>
 <style>
   body{{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}}
@@ -124,6 +125,7 @@ async def user_inbox():
               <pre>{html.escape(n['card'])}</pre>
             </div>"""
     return f"""<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기 — 내 알림함</title>
 <style>
   body{{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}}
