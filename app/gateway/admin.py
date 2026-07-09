@@ -79,12 +79,14 @@ async def review_queue():
 {nav.admin_nav("admin")}
 <h1>컴플라이언스 검토 큐</h1>
 <p class="sub">고위험 공시는 승인 후 알림함으로 발송됩니다. 반려 시 폐기.</p>
+<div class="table-scroll">
 <table>
   <thead><tr>
     <th>접수 시각</th><th>회사</th><th>공시 제목</th><th>위험 키워드</th><th>AI 해석 내용</th><th>처리</th>
   </tr></thead>
   <tbody>{rows}</tbody>
 </table>
+</div>
 </body></html>"""
     return page
 

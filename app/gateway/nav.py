@@ -63,6 +63,7 @@ NAV_STYLE = """
   #q:focus{outline:none;background:var(--canvas)!important;border-color:var(--accent)!important}
 
   /* 표(검토 큐 · 관심종목) — 라이트 헤더, 카드형 */
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r-card)}
   table{width:100%!important;border-collapse:separate!important;border-spacing:0!important;
         background:var(--canvas)!important;border:1px solid var(--line)!important;border-radius:var(--r-card)!important;
         overflow:hidden!important;box-shadow:var(--shadow)!important}
@@ -104,6 +105,10 @@ NAV_STYLE = """
     body{padding:24px 16px!important}
     .add{flex-wrap:wrap}
     .add input.code,.add input.name{width:100%!important;flex:none!important}
+    /* 검토 큐 표는 좁은 화면에서 세로로 뭉개지지 않게 최소폭 유지 + 가로 스크롤 */
+    .table-scroll table{min-width:660px!important}
+    .table-scroll th,.table-scroll td{white-space:nowrap!important}
+    .table-scroll td .interp,.table-scroll td .card-pre{white-space:normal!important}
   }
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 """
