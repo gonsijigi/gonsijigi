@@ -100,6 +100,12 @@ button{background:#1B2A4A;color:#fff;border:0;border-radius:8px;padding:10px 18p
 .poll-btn:disabled{opacity:.6;cursor:default}
 @media(max-width:760px){.home-grid{grid-template-columns:1fr}.home-aside{position:static}}
 @media(prefers-reduced-motion:reduce){.live .dot,#alerts .alert.new{animation:none}}
+/* 해석 대기 로딩 팝업 */
+#loading{display:none;position:fixed;inset:0;background:rgba(25,31,40,.35);z-index:50;align-items:center;justify-content:center}
+#loading.on{display:flex}
+#loading .box{background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 12px 40px rgba(0,0,0,.18);display:flex;gap:12px;align-items:center;font-size:14.5px;color:#191F28;font-weight:600}
+#loading .sp{width:22px;height:22px;border-radius:50%;border:3px solid #EAF2FE;border-top-color:#3182F6;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style></head><body><div class=wrap>
 <div class="home-head">
 <h1>공시지기</h1>
@@ -118,17 +124,21 @@ button{background:#1B2A4A;color:#fff;border:0;border-radius:8px;padding:10px 18p
 <div id="alerts"></div>
 </aside>
 </div></div>
+<div id="loading"><div class="box"><div class="sp"></div><span>공시 조회·해석 중…</span></div></div>
 <script>
 async function send(e){e.preventDefault();
 const q=document.getElementById('q').value;if(!q)return;
 const log=document.getElementById('log');log.textContent='나: '+q+'\\n\\n공시지기: ';
 document.getElementById('q').value='';
+const ld=document.getElementById('loading');ld.classList.add('on');
+try{
 const res=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
 const rd=res.body.getReader();const dec=new TextDecoder();
 while(true){const{done,value}=await rd.read();if(done)break;
 for(const line of dec.decode(value).split('\\n')){
 if(line.startsWith('data: ')){const t=line.slice(6);
-if(t!=='[DONE]')log.textContent+=t+'\\n';}}}}
+if(t!=='[DONE]'){ld.classList.remove('on');log.textContent+=t+'\\n';}}}}
+}finally{ld.classList.remove('on');}}
 var _alertN=0;
 async function loadAlerts(){
 try{const r=await fetch('/notifications');const items=await r.json();renderAlerts(items);}catch(e){}}
