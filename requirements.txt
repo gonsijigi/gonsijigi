@@ -1,12 +1,15 @@
-fastapi
-uvicorn
-langgraph
-openai
-python-dotenv
-requests
+# 직접 의존성 버전 고정 — 팀원·CI·채점 환경이 동일 버전으로 재현되게 한다.
+# (과거 opendartreader 구버전 설치로 document_all 부재 버그를 겪은 뒤의 재발 방지)
+fastapi==0.139.0
+uvicorn==0.50.2
+langgraph==1.2.8
+openai==2.44.0
+python-dotenv==1.2.2
+requests==2.34.2
 opendartreader==0.2.3
 beautifulsoup4==4.15.0
 langchain-postgres==0.0.17
 psycopg[binary]==3.3.4
 langchain-ollama==1.1.0
 langchain-text-splitters==1.1.2
+httpx==0.28.1            # FastAPI TestClient(verify_demo) 구동에 필요
