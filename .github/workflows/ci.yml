@@ -17,6 +17,9 @@ jobs:
         run: |
           python -m compileall -q app
           python tests/test_smoke.py
+      - name: 데모 경로 통합 검증 (리플레이 — 그래프+HITL 큐+승인+알림함, 외부 의존 0)
+        # 스모크가 못 잡는 전 경로 회귀(실데이터 교체 때 verify가 CI 밖이라 못 잡았던 사각지대)를 막는다
+        run: python tests/verify_demo.py
   docker-build:
     needs: smoke-test
     runs-on: ubuntu-latest
