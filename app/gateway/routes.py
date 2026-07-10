@@ -58,6 +58,7 @@ async def home():
 
 
 HOME_HTML = """<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기</title><style>
 body{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}
 .wrap{max-width:680px;margin:0 auto}h1{color:#1B2A4A;font-size:22px}
@@ -99,6 +100,12 @@ button{background:#1B2A4A;color:#fff;border:0;border-radius:8px;padding:10px 18p
 .poll-btn:disabled{opacity:.6;cursor:default}
 @media(max-width:760px){.home-grid{grid-template-columns:1fr}.home-aside{position:static}}
 @media(prefers-reduced-motion:reduce){.live .dot,#alerts .alert.new{animation:none}}
+/* 해석 대기 로딩 팝업 */
+#loading{display:none;position:fixed;inset:0;background:rgba(25,31,40,.35);z-index:50;align-items:center;justify-content:center}
+#loading.on{display:flex}
+#loading .box{background:#fff;border-radius:16px;padding:20px 24px;box-shadow:0 12px 40px rgba(0,0,0,.18);display:flex;gap:12px;align-items:center;font-size:14.5px;color:#191F28;font-weight:600}
+#loading .sp{width:22px;height:22px;border-radius:50%;border:3px solid #EAF2FE;border-top-color:#3182F6;animation:spin .8s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style></head><body><div class=wrap>
 <div class="home-head">
 <h1>공시지기</h1>
@@ -117,17 +124,21 @@ button{background:#1B2A4A;color:#fff;border:0;border-radius:8px;padding:10px 18p
 <div id="alerts"></div>
 </aside>
 </div></div>
+<div id="loading"><div class="box"><div class="sp"></div><span>공시 조회·해석 중…</span></div></div>
 <script>
 async function send(e){e.preventDefault();
 const q=document.getElementById('q').value;if(!q)return;
 const log=document.getElementById('log');log.textContent='나: '+q+'\\n\\n공시지기: ';
 document.getElementById('q').value='';
+const ld=document.getElementById('loading');ld.classList.add('on');
+try{
 const res=await fetch('/ask',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
 const rd=res.body.getReader();const dec=new TextDecoder();
 while(true){const{done,value}=await rd.read();if(done)break;
 for(const line of dec.decode(value).split('\\n')){
 if(line.startsWith('data: ')){const t=line.slice(6);
-if(t!=='[DONE]')log.textContent+=t+'\\n';}}}}
+if(t!=='[DONE]'){ld.classList.remove('on');log.textContent+=t+'\\n';}}}}
+}finally{ld.classList.remove('on');}}
 var _alertN=0;
 async function loadAlerts(){
 try{const r=await fetch('/notifications');const items=await r.json();renderAlerts(items);}catch(e){}}
@@ -137,7 +148,7 @@ if(!items||!items.length){box.innerHTML='<div class="alert-empty">아직 도착�
 const grew=items.length>_alertN;box.innerHTML='';
 items.slice().reverse().forEach(function(it,i){
 const d=document.createElement('div');d.className='alert'+(grew&&i===0?' new':'');
-const co=document.createElement('div');co.className='co';co.textContent=it.corp_name||'';
+const co=document.createElement('div');co.className='co';co.textContent=(it.category?'['+it.category+'] ':'')+(it.corp_name||'');
 const rn=document.createElement('div');rn.className='rn';rn.textContent=it.report_nm||'';
 const ts=document.createElement('div');ts.className='ts';ts.textContent=it.delivered_at||'';
 const left=document.createElement('div');left.appendChild(co);left.appendChild(rn);left.appendChild(ts);

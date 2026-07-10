@@ -77,6 +77,28 @@ def test_fetch_recent_window():
     assert _recent_window("오늘 내 종목 공시 뭐 있었어?") is None, "당일 질문에 창이 열림"
 
 
+def test_five_category_mapping():
+    """필수 5종 분류 — 보고서명 → 카테고리, 그 외는 None(알림 제외)."""
+    from app.tools.categories import categorize
+    assert categorize("단일판매ㆍ공급계약체결") == "수주"
+    assert categorize("[기재정정]주요사항보고서(유상증자결정)") == "유상증자"
+    assert categorize("주요사항보고서(전환사채권발행결정)") == "전환사채"
+    assert categorize("임원ㆍ주요주주특정증권등소유상황보고서") == "내부자"
+    assert categorize("연결재무제표기준영업(잠정)실적(공정공시)") == "실적"
+    assert categorize("기업설명회(IR)개최(안내공시)") is None
+
+
+def test_purpose_classifier():
+    """유상증자 목적 분류 — 우세 금액 필드 기준, 단정 표현 없이 조건부 라벨."""
+    from app.tools.categories import classify_purpose
+    growth = classify_purpose("4. 자금조달의 목적 | 시설자금 (원) 2,799,999,666 | 운영자금 (원) 1,000")
+    assert growth and growth.startswith("시설자금") and "경우가 많음" in growth
+    debt = classify_purpose("시설자금 (원) 0 | 채무상환자금 (원) 5,000,000,000")
+    assert debt and debt.startswith("채무상환자금") and "재무 부담" in debt
+    assert classify_purpose("금액 표기가 없는 문서") is None
+    assert "호재" not in (growth + debt) and "악재" not in (growth + debt), "단정 표현 금지"
+
+
 def test_parse_case_insensitive_stock():
     """영문 포함 종목명은 대소문자 무시로 매칭돼야 한다(sk하이닉스=SK하이닉스).
     corp_names.json이 없으면 기본 3종목만 있어 스킵(폴백)."""
@@ -97,5 +119,7 @@ if __name__ == "__main__":
     test_parse_extracts_stock_and_keyword(); print("PASS parse-entity")
     test_parse_passes_plain_question(); print("PASS parse-plain")
     test_fetch_recent_window(); print("PASS fetch-recent")
+    test_five_category_mapping(); print("PASS five-category")
+    test_purpose_classifier(); print("PASS purpose-label")
     test_parse_case_insensitive_stock(); print("PASS parse-case")
     print("SMOKE OK")

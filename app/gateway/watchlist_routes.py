@@ -45,6 +45,7 @@ async def watchlist_page():
             </tr>"""
 
     return f"""<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기 — 관심종목 관리</title>
 <style>
   body{{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}}

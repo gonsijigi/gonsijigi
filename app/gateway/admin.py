@@ -55,6 +55,7 @@ async def review_queue():
             </tr>"""
 
     page = f"""<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기 — 컴플라이언스 검토</title>
 <style>
   body{{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}}
@@ -78,12 +79,14 @@ async def review_queue():
 {nav.admin_nav("admin")}
 <h1>컴플라이언스 검토 큐</h1>
 <p class="sub">고위험 공시는 승인 후 알림함으로 발송됩니다. 반려 시 폐기.</p>
+<div class="table-scroll">
 <table>
   <thead><tr>
     <th>접수 시각</th><th>회사</th><th>공시 제목</th><th>위험 키워드</th><th>AI 해석 내용</th><th>처리</th>
   </tr></thead>
   <tbody>{rows}</tbody>
 </table>
+</div>
 </body></html>"""
     return page
 
@@ -124,6 +127,7 @@ async def user_inbox():
               <pre>{html.escape(n['card'])}</pre>
             </div>"""
     return f"""<!doctype html><html lang=ko><head><meta charset=utf-8>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>공시지기 — 내 알림함</title>
 <style>
   body{{font-family:'Malgun Gothic',sans-serif;background:#F5F7FA;margin:0;padding:32px;color:#222}}

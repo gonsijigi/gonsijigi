@@ -51,6 +51,8 @@ def deliver(item: dict) -> None:
         "rcept_no":       item.get("rcept_no", ""),
         "interpretation": item.get("interpretation", ""),  # 알림 펼침용 해석
         "card":           item.get("card", ""),
+        "category":       item.get("category", ""),   # 필수 5종 뱃지(수주/유상증자/전환사채/내부자/실적)
+        "purpose":        item.get("purpose", ""),    # 유상증자 자금 목적 라벨
         "delivered_at":   datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     })
 
