@@ -1,5 +1,13 @@
 """[노드] RAG 해석 생성 — 근거에 없는 말은 하지 않는다(오픈북 원칙).
-해석은 LangChain OutputParser로 유형/사실/주의 3필드로 구조화한다(파싱 실패 시 원문 폴백)."""
+
+역할: 현재 공시 원문 발췌 + 과거 유사 공시(RAG)를 근거로 펴놓고 해석을 생성한다.
+위치: 아키텍처의 'RAG 해석 생성' 박스 — 이 에이전트에서 가장 큰 '생각'이 일어나는 곳.
+관련: 데모 장면 ② · 보고서 6.5절 · README RAG 섹션.
+
+구조화: LangChain PydanticOutputParser로 [유형/사실/해석 참고] 3필드 —
+'단정하지 않는다'는 원칙이 프롬프트 부탁이 아니라 출력 구조로 강제된다.
+파싱 실패 시 원문 텍스트로 폴백(서비스는 계속 산다).
+"""
 import json
 import re
 from typing import List
@@ -13,7 +21,9 @@ from app.llm.client import llm
 from app.rag.retriever import search_similar
 from app.tools.dart import get_document_text
 
-DOC_EXCERPT_CHARS = 1500  # 현재 공시 원문 발췌 길이 — 소형 LLM 컨텍스트 보호
+# [COST] 원문 전문(수천~수만 자)을 통째로 넣지 않고 발췌만 주입 — 입력 토큰을
+# 정보 밀도가 높은 구간에만 쓴다. 소형 LLM의 컨텍스트 보호 겸 비용 절약.
+DOC_EXCERPT_CHARS = 1500
 
 # '무엇을 위한 돈인가'가 해석의 핵심 — 원문에서 자금 목적 구간을 찾아 발췌에 반드시 포함한다
 _PURPOSE_KEYS = ("조달자금의 구체적 사용목적", "자금조달의 목적", "사용목적")
@@ -93,8 +103,11 @@ def interpret_node(state: AgentState) -> dict:
 
     d0 = state["disclosures"][0]
 
-    # 현재 공시의 '원문 발췌'를 근거로 주입 — [사실]이 제목이나 과거 유사 사례가 아니라
-    # 이 공시 자체(금액·방식·목적 등)에 접지되게 한다. 키 없음/호출 실패 시 빈 값 → 기존 동작.
+    # [ORCHESTRATION] 근거 수집 1 — 현재 공시 원문 접지.
+    # 생각: "이 공시가 실제로 뭐라고 적었나"가 사실관계의 유일한 출처다.
+    # 행동: 원문을 도구로 가져와 발췌를 근거 맨 앞에 놓는다. [사실]이 제목이나
+    #       과거 유사 사례가 아니라 이 공시 자체(금액·방식·목적)에 접지된다.
+    #       키 없음/호출 실패 시 빈 값 → 발췌 없이 진행(폴백, 서비스 유지).
     try:
         doc = get_document_text(d0.get("rcept_no", ""))
     except Exception:
@@ -103,8 +116,11 @@ def interpret_node(state: AgentState) -> dict:
         context_lines.append(f"\n[현재 공시 원문 발췌 — {d0['corp_name']} / {d0['report_nm']}]")
         context_lines.append(_doc_excerpt(doc))
 
-    # 과거 유사 공시 근거 (RAG) — 사용자가 물은 종목/키워드가 있으면 그걸로 검색(질문 반영),
-    # 없으면 첫 공시 기준으로 검색.
+    # [ORCHESTRATION] 근거 수집 2 — 과거 유사 공시 검색(RAG).
+    # 생각: "이런 유형의 공시가 과거에 어떻게 해석됐나"는 해석의 맥락 근거다.
+    # 행동: 사용자가 물은 종목/키워드가 있으면 그걸로 검색(질문 반영),
+    #       없으면 첫 공시 기준으로 검색해 상위 3건만 근거에 붙인다.
+    # [COST] k=3 + 거리 필터(retriever) — 관련 청크만 프롬프트에 들어간다.
     parsed_terms = " ".join(
         state.get("parsed_keywords", [])
         + [s["name"] for s in state.get("parsed_stocks", []) if s.get("name")]

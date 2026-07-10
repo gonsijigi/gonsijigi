@@ -1,5 +1,15 @@
 """과거 유사 공시 검색 — pgvector 벡터 검색 + 메타데이터 반환.
-interpret 노드가 이 함수를 호출해 근거를 컨텍스트에 추가한다."""
+
+역할: interpret 노드의 'RAG 검색' 도구. 질문/공시와 비슷한 과거 공시 청크를 찾는다.
+위치: 아키텍처의 '데이터 저장소(pgvector)' 박스의 읽기 창구. 적재는 ingest.py.
+관련: 데모 장면 ② · 보고서 6.5절.
+
+점수 방향 주의 — 이 점수는 '거리'다: 작을수록 유사, 클수록 무관.
+(유사도로 착각하면 필터 방향이 뒤집힌다.)
+
+[COST] score_threshold(기본 0.5)로 무관한 청크를 잘라낸다 — 억지 근거가
+프롬프트에 들어가 토큰을 낭비하고 해석을 오염시키는 것을 동시에 막는다.
+"""
 from langchain_ollama import OllamaEmbeddings
 from langchain_postgres import PGVectorStore
 

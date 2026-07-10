@@ -1,5 +1,9 @@
-"""공시지기 진입점.  실행: uvicorn app.main:app --host 0.0.0.0 --port 8000
-폴더 구조는 docs/architecture.png 의 박스와 1:1 대응한다 — README 매핑표 참고."""
+"""공시지기 진입점 — FastAPI 앱 조립.
+
+실행: uvicorn app.main:app --port 8010  (리플레이: REPLAY_MODE=true 를 앞에)
+구조: 라우터 3개(사용자 홈·관리자 검토·관심종목)를 조립만 한다 — 로직은 각 모듈에.
+폴더 구조는 docs/architecture.png 의 박스와 1:1 대응 — README 매핑표 참고.
+"""
 from fastapi import FastAPI
 
 from app.gateway.routes import router as gateway_router

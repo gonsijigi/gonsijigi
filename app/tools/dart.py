@@ -144,7 +144,16 @@ def _replay_search(stock_code: str) -> list[dict]:
 
 def dart_search(stock_code: str, bgn_de: str | None = None, end_de: str | None = None) -> list[dict]:
     """공시 목록 조회 — DART list.json 실호출. 기본은 '오늘' 하루.
-    키·매핑이 없거나 호출이 실패하면 mock으로 폴백해 데모가 죽지 않게 한다."""
+
+    Args:
+        stock_code: 6자리 종목코드. bgn_de/end_de: 조회 기간(YYYYMMDD, 기본 당일).
+    실패·폴백 사다리: 리플레이 → 실호출 → (키/매핑 없음·호출 실패·한도 초과) mock.
+        어떤 단계가 무너져도 빈손으로 죽지 않는다(데모 장면 ⑤).
+    """
+    # [ORCHESTRATION] 데이터 소스 스위치.
+    # 생각: 지금이 시연 재생 모드인가(REPLAY_MODE) → 행동: 준비된 실제 과거 공시를
+    #       재생한다. 발표 시각에 새 공시가 없을 위험(외부 의존)을 제거하는 장치.
+    # [COST] 리플레이 중에는 DART 외부 호출이 0건 — 시연 반복이 공짜다.
     from app.core.config import REPLAY_MODE
     if REPLAY_MODE:
         return _replay_search(stock_code)
@@ -154,6 +163,8 @@ def dart_search(stock_code: str, bgn_de: str | None = None, end_de: str | None =
         corp_code = get_corp_code(stock_code)
     except FileNotFoundError:              # corp_map.json 아직 안 만든 경우
         corp_code = None
+    # [ORCHESTRATION] 폴백 판정 — 생각: 실호출 전제조건(키·코드매핑)이 갖춰졌는가
+    # → 행동: 아니면 mock으로 전환하고 경고만 남긴다. 팀원이 키 없이도 개발 가능.
     if not api_key or not corp_code:
         print(f"[경고] DART 실호출 불가(키/매핑 없음) → mock 사용: {stock_code}")
         return MOCK_DISCLOSURES.get(stock_code, [])

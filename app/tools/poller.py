@@ -46,13 +46,22 @@ def poll_watchlist() -> dict:
             report = " ".join(d.get("report_nm", "").split())
             hits = [k for k in RISK_KEYWORDS if k in report]
             cat = categorize(report)
-            # '필수 5종'만 추려 알림 — 단 고위험은 카테고리와 무관하게 항상 검토 큐로
+            # [ORCHESTRATION] 선별 판정 — 에이전트가 '알릴 가치'를 결정하는 지점.
+            # 생각: 이 공시가 개인투자자 필수 5종(수주/유상증자/전환사채/내부자/실적)인가,
+            #       혹은 고위험 키워드에 걸리는가.
+            # 행동: 둘 다 아니면 알림 자체를 생략(skip) — 알림 피로를 막는다.
+            #       고위험은 카테고리와 무관하게 항상 검토 큐로(안전이 선별보다 우선).
+            # [COST] 여기서 걸러진 공시는 원문 조회도 해석도 하지 않는다 —
+            #        '알릴 가치가 있는 것에만 비용을 쓴다'의 핵심 지점.
             if not hits and cat is None:
                 skipped += 1
                 continue
             # 뱃지: 5종 카테고리 우선, 없으면 걸린 위험 키워드(거래정지 등)를 뱃지로
             badge = cat or (hits[0] if hits else "")
-            # 유상증자는 원문에서 자금 목적을 읽어 라벨 (실패 시 라벨 생략 — 지어내지 않음)
+            # 유상증자는 원문에서 자금 목적을 읽어 라벨 (실패 시 라벨 생략 — 지어내지 않음).
+            # [SAFETY] 라벨은 "~목적 (일반적으로 ~로 해석되는 경우가 많음)"까지만 —
+            #          호재/악재 단정은 라벨 정책(categories.classify_purpose)에서도 금지.
+            # [COST] 원문 조회는 유상증자일 때만 — 전 건 원문 조회 대비 외부 호출을 크게 줄인다.
             purpose = None
             if cat == "유상증자":
                 try:
@@ -61,7 +70,7 @@ def poll_watchlist() -> dict:
                     purpose = None
             interp = _interpret_stub(corp, report, purpose)
             card = build_notification(corp, report, interp, rcept)
-            if hits:                                  # 고위험 → 검토 큐(승인 후 발송)
+            if hits:                                  # [SAFETY] 고위험 → 검토 큐(사람 승인 후에만 발송)
                 enqueue({
                     "corp_name": corp, "report_nm": report, "rcept_no": rcept,
                     "rcept_dt": d.get("rcept_dt", ""), "interpretation": interp,
