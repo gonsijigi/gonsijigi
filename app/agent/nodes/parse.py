@@ -1,5 +1,13 @@
 """[노드] 질문 파싱 — 종목·키워드를 결정론적으로 추출하고, 무의미 입력은 되묻는다.
-LLM을 쓰지 않아 지연·환각 없이 동작한다(발표 안정성). 가드레일(안전) 다음 단계."""
+
+역할: 자연어 질문에서 '어느 종목·무슨 키워드'를 뽑아 뒤 노드들의 조회 범위를 좁힌다.
+위치: 가드레일 다음(안전이 이해보다 먼저) — 여기 통과분만 도구 호출로 진행.
+관련: 스모크 parse-* 4종이 지키는 불변.
+
+[COST] 왜 LLM을 쓰지 않나 — 종목명 매칭은 사전 대조로 충분한 결정론 문제다.
+LLM을 쓰면 토큰이 들고, 지연이 생기고, 환각(없는 종목 추출) 위험까지 생긴다.
+이 노드는 발표 안정성과 비용을 동시에 잡는 '무LLM 추론' 지점이다.
+"""
 from __future__ import annotations
 import re
 
@@ -41,6 +49,7 @@ _names_cache: dict | None = None
 
 
 def _names() -> dict:
+    """종목명→코드 사전(3,976개)을 1회만 로드해 캐시 — 질문마다 파일을 읽지 않는다."""
     global _names_cache
     if _names_cache is None:
         _names_cache = load_corp_names() or dict(_FALLBACK_NAMES)
@@ -48,7 +57,12 @@ def _names() -> dict:
 
 
 def _match_stocks(q: str) -> list[dict]:
-    """질문에서 종목을 추출 — 6자리 코드 + 전체 회사명(부분일치) 매칭."""
+    """질문에서 종목을 추출 — 6자리 코드 + 전체 회사명(부분일치) 매칭.
+
+    왜 '긴 이름 우선 + 구간 선점'인가 — 'SK하이닉스' 안에 'SK'가 들어 있어
+    짧은 이름부터 매칭하면 오탐이 난다. 긴 이름이 글자 구간을 먼저 차지하면
+    그 안의 짧은 이름은 자동으로 배제된다.
+    """
     names = _names()
     ql = q.lower()                              # 대소문자 무시(SK/LG/KT 등 영문 이름)
     hits: list[dict] = []
@@ -88,10 +102,20 @@ def _match_stocks(q: str) -> list[dict]:
 
 
 def parse_node(state: AgentState) -> dict:
+    """질문에서 종목·키워드를 추출하고, 무의미 입력이면 되묻기로 단락한다.
+
+    Returns:
+        parsed_stocks/parsed_keywords: 뒤 노드(fetch 조회 범위, interpret RAG 검색어)의 입력.
+        clarify=True면 CLARIFY_MSG가 곧 응답 — route_parse가 그래프를 종료한다.
+    """
     q = state.get("user_input") or ""
     stocks = _match_stocks(q)
     keywords = [k for k in KEYWORDS if k in q]
-    # 쓰레기 판정: 종목·키워드도 없고 의미 있는 낱말도 없으면 → 되묻기(단락)
+    # [ORCHESTRATION] 이해 판정.
+    # 생각: 종목도 키워드도 없고 의미 있는 낱말(2자 이상)조차 없는가
+    # 행동: 그렇다면 추측으로 진행하지 않고 되묻는다 — "모르면 모른다고 말한다"가
+    #       엉뚱한 답변(아무 관심종목이나 해석)보다 낫다는 판단.
+    # [COST] 이 단락으로 무의미 입력은 DART 호출·LLM 해석 비용을 전혀 쓰지 않는다.
     if not stocks and not keywords and not _MEANINGFUL_RE.search(q):
         return {"parsed_stocks": [], "parsed_keywords": [],
                 "clarify": True, "response": CLARIFY_MSG}
