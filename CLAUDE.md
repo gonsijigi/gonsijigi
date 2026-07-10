@@ -16,6 +16,7 @@
 
 ## 팀 규칙 (반드시 지킬 것)
 - 브랜치: main 직접 커밋 금지. feat/* 브랜치 → PR → CI 초록불 → 머지
+- PR 규칙: PR마다 docs/발표_QA노트.md 에 관련 예상 Q&A를 1건 이상 추가한다
 - 비밀정보: API 키·토큰은 .env로만 관리. 코드·커밋·이 파일에 절대 쓰지 않기
 - 테스트: 코드 수정 후 python tests/test_smoke.py 로 SMOKE OK 확인
 - 구현 경계: 카카오톡 알림, MyData, KIND 거래정지, JWT 인증, Redis, K8s 실배포는
