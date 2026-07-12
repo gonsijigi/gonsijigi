@@ -18,6 +18,8 @@ from __future__ import annotations  # PEP604(dict | None) 어노테이션을 3.9
 import uuid
 from datetime import datetime
 
+from app.core.redact import redact
+
 _queue: list[dict] = []
 
 
@@ -38,18 +40,24 @@ def pop_by_id(item_id: str) -> dict | None:
     return None
 
 
-# ── 사용자 알림함(인메모리) — HITL 승인 시 여기로 발송된다 ──
+# ── 사용자 알림함(인메모리) — HITL 승인분과 폴러의 일반(5종) 공시가 여기로 발송된다 ──
 # 실서비스에서는 웹푸시/알림톡으로 교체; 인터페이스(deliver/list_notifications)는 유지.
 _notifications: list[dict] = []
 
 
 def deliver(item: dict) -> None:
-    """HITL 승인된 항목을 사용자 알림함에 실제로 적재한다."""
+    """알림함 적재의 단일 수렴점 — 관리자 승인 핸들러(고위험)와 폴러(일반 5종)가 호출한다.
+
+    [SAFETY] 발송 직전 마지막 마스킹 — card는 build_notification이 이미 마스킹하지만,
+    별도 필드로 실려 오는 해석 원문(interpretation)은 이 지점 전까지 redact를
+    거치지 않는다(HITL 경로의 LLM 원출력). '나가는 문' 하나를 지키는 원칙대로
+    여기서 예외 없이 마스킹한다.
+    """
     _notifications.append({
         "corp_name":      item.get("corp_name", ""),
         "report_nm":      item.get("report_nm", ""),
         "rcept_no":       item.get("rcept_no", ""),
-        "interpretation": item.get("interpretation", ""),  # 알림 펼침용 해석
+        "interpretation": redact(item.get("interpretation", "")),  # 알림 펼침용 해석
         "card":           item.get("card", ""),
         "category":       item.get("category", ""),   # 필수 5종 뱃지(수주/유상증자/전환사채/내부자/실적)
         "purpose":        item.get("purpose", ""),    # 유상증자 자금 목적 라벨

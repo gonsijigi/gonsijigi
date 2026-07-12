@@ -63,7 +63,8 @@ workflow.add_conditional_edges("risk", route_risk, {"normal": "notify", "high": 
 workflow.add_edge("notify", END)
 workflow.add_edge("hitl", END)
 
-# checkpointer + thread_id — 사용자별 대화 맥락 분리(보고서 6.4절).
+# checkpointer + thread_id 배선(보고서 6.4절) — 단, run_agent가 매 호출 전 필드를
+# 초기화하므로 이전 턴 상태는 아직 쓰지 않는다(멀티턴 메모리는 로드맵, README §10).
 # 프로토타입은 인메모리(재시작 시 초기화가 곧 데모 리셋), 운영 전환 시 저장소만 교체.
 memory = InMemorySaver()
 app_graph = workflow.compile(checkpointer=memory)
@@ -73,7 +74,7 @@ def run_agent(user_id: str, question: str, stock_codes: list) -> str:
     """그래프 1회 실행 — 게이트웨이(/ask)와 콘솔 데모가 쓰는 단일 진입점.
 
     Args:
-        user_id: 사용자 식별자. thread_id로 변환되어 대화 맥락을 분리한다.
+        user_id: 사용자 식별자. thread_id로 변환된다(멀티턴 맥락 활용은 로드맵).
         question: 사용자 질문 원문.
         stock_codes: 관심종목 코드 목록(질문에 종목이 명시되면 무시될 수 있음).
     Returns:
