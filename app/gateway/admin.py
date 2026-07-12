@@ -93,6 +93,8 @@ async def review_queue():
 
 @router.post("/approve/{item_id}")
 async def approve(item_id: str):
+    # [ORCHESTRATION] HITL 승인 게이트의 '행동' 절반(README §2 표 6행) —
+    # 사람의 결정이 곧 분기: 승인 → deliver()로 알림함 발송 / 반려(/reject) → 폐기.
     item = pop_by_id(item_id)
     if item:
         deliver(item)  # 사용자 알림함(/admin/inbox)에 실제 적재

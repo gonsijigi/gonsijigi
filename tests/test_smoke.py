@@ -11,6 +11,13 @@ from app.agent.nodes import risk_node, parse_node
 def test_redact_masks_secrets():
     out = redact("키 sk-FAKE-TESTKEY123456 문의 hong@test.com")
     assert "[API_KEY 마스킹]" in out and "[EMAIL 마스킹]" in out
+    # 주민번호 + 한글 조사 회귀 — 한글은 \w라 \b 경계가 안 생겨 마스킹이 새던 케이스
+    assert "1234567" not in redact("주민번호 900101-1234567입니다")
+    # 알림함 적재 경로 회귀 — HITL 승인분 해석 원문(interpretation)도 발송 직전 마스킹
+    from app.gateway.queue import deliver, list_notifications
+    deliver({"corp_name": "테스트", "interpretation": "문의 hong@test.com / 900101-1234567입니다"})
+    boxed = list_notifications()[-1]["interpretation"]
+    assert "hong@test.com" not in boxed and "1234567" not in boxed, "알림함 마스킹 우회"
 
 
 def test_notification_has_source_and_disclaimer():
@@ -97,6 +104,13 @@ def test_purpose_classifier():
     assert debt and debt.startswith("채무상환자금") and "재무 부담" in debt
     assert classify_purpose("금액 표기가 없는 문서") is None
     assert "호재" not in (growth + debt) and "악재" not in (growth + debt), "단정 표현 금지"
+    # DART 실서식 회귀 — 미사용 필드는 '-' 표기: 줄을 넘어 다음 필드 금액을 훔쳐
+    # 채무상환(재무 부담)이 성장 라벨로 뒤집히던 결함
+    dash = classify_purpose("시설자금 (원) | -\n영업양수자금 (원) | -\n"
+                            "운영자금 (원) | -\n채무상환자금 (원) | 5,000,000,000")
+    assert dash and dash.startswith("채무상환자금"), "미사용(-) 필드가 다음 금액을 가로챔"
+    # 연도 오탐 회귀 — 서술문의 '2026년'을 금액으로 읽어 라벨을 지어내던 결함
+    assert classify_purpose("운영자금 조달을 위해 2026년 중 발행 예정") is None, "연도를 금액으로 오인"
 
 
 def test_parse_case_insensitive_stock():

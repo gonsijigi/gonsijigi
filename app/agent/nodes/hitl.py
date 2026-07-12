@@ -16,8 +16,11 @@ def hitl_node(state: AgentState) -> dict:
     실패·폴백: review_disclosure가 비어 있으면(이론상 없지만) 첫 공시로 방어 —
         고위험 판정을 받고도 큐 적재가 누락되는 최악을 피한다.
     """
+    # [ORCHESTRATION] HITL 승인 게이트(README §2 표 6행) — 생각: 이 해석은 고위험이라
+    # 기계 단독 발송 금지 → 행동: 검토 큐에 적재하고 승인/반려 분기를 사람에게 위임한다.
     # [SAFETY] 발송 보류 게이트 — 카드는 지금 만들어 두되(승인 즉시 발송 가능하게),
-    # 사용자에게는 절대 직접 보내지 않는다. deliver()는 오직 관리자 승인 핸들러만 호출.
+    # 사용자에게는 절대 직접 보내지 않는다. 이 고위험 경로의 deliver() 호출은
+    # 관리자 승인 핸들러(admin.py:approve)뿐이다(일반 5종은 폴러가 검토 없이 직행).
     d = state.get("review_disclosure") or state["disclosures"][0]
     card = build_notification(d["corp_name"], d["report_nm"],
                               state["interpretation"], d["rcept_no"])

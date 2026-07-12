@@ -46,8 +46,11 @@ def classify_purpose(doc_text: str) -> str | None:
         return None
     amounts: dict[str, int] = {}
     for field in _PURPOSE_FIELDS:
-        # 예: '시설자금 (원) | 2,799,999,666' — 필드명 뒤 40자 내 첫 콤마숫자
-        m = re.search(re.escape(field) + r"[^\d]{0,40}([\d,]{4,})", doc_text)
+        # 예: '시설자금 (원) | 2,799,999,666' — 필드명 뒤 같은 줄 40자 내 콤마 형식 금액.
+        # [SAFETY] 줄바꿈(\n) 통과 금지 — DART 서식은 미사용 필드를 '-'로 채우는데,
+        #          줄을 넘어가면 다음 필드의 금액을 훔쳐와 정반대 라벨이 나온다.
+        #          콤마 자릿수 형식(1,000 단위) 강제 — '2026년' 같은 연도 오탐 차단.
+        m = re.search(re.escape(field) + r"[^\d\n]{0,40}(\d{1,3}(?:,\d{3})+)", doc_text)
         if m:
             try:
                 amounts[field] = int(m.group(1).replace(",", ""))

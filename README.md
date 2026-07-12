@@ -21,7 +21,7 @@ flowchart LR
 ```
 
 - **역할 분리** — 화면(FastAPI 게이트웨이), 판단(LangGraph 그래프), 지식(pgvector), 추론(Ollama), 데이터(DART 도구)가 폴더 단위로 분리되어 있다. 각 박스는 아래 폴더 구조와 1:1 대응하므로, 다이어그램의 어느 박스든 해당 폴더를 열면 그 코드가 나온다.
-- **연결 관계** — 사용자 요청은 반드시 게이트웨이→그래프를 지나며, 그래프만이 도구(DART·RAG·LLM)를 호출한다. 화면 코드가 LLM을 직접 부르는 경로는 없다. 발송(알림함 적재)은 큐 모듈의 `deliver()` 한 곳으로 수렴한다.
+- **연결 관계** — 대화형 요청(/ask)은 반드시 게이트웨이→그래프를 지나며, LLM·RAG 호출은 그래프 노드에만 있다 — 화면 코드가 LLM을 직접 부르는 경로는 없다. DART 조회는 두 경로다: 그래프(fetch 노드)와 폴러(/poll — LLM 없는 결정론 선별이라 그래프를 태우지 않는다). 발송(알림함 적재)은 큐 모듈의 `deliver()` 한 곳으로 수렴하고, 그 안에서 발송 직전 마스킹이 강제된다.
 - **확장·운영 고려** — LLM 호출은 `app/llm/client.py` 단일 창구(OpenAI 호환)라 상위 모델 교체가 .env 세 줄이다. 큐는 인메모리지만 인터페이스(enqueue/deliver)를 유지한 채 Redis/DB로 교체하도록 설계했다. K8s는 로드맵으로 선언만 했다(이유는 §12).
 
 ### 에이전트 그래프 (코드 `app/agent/graph.py`와 1:1)
@@ -38,7 +38,9 @@ flowchart LR
 ```
 
 노드 7개(guardrail·parse·fetch·interpret·risk·notify·hitl)와 조건부 엣지 3개.
-`InMemorySaver` checkpointer + `thread_id=user_별`로 사용자 대화 맥락을 분리한다.
+`InMemorySaver` checkpointer + `thread_id` 배선은 되어 있으나, 현재 `run_agent`가
+매 호출 전 필드를 초기화하므로 이전 턴 상태를 활용하지 않는다 — 멀티턴 메모리(대화
+누적 활용)는 로드맵(§10)이고, 됐다고 쓰지 않는다.
 
 ## 2. ★ AI Agent 오케스트레이션 포인트
 

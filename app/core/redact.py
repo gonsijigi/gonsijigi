@@ -13,7 +13,9 @@ import re
 _REDACT_PATTERNS = {
     "API_KEY": re.compile(r"sk-[A-Za-z0-9_\-]{8,}"),      # OpenAI 계열 키 형태
     "EMAIL": re.compile(r"[\w.\-]+@[\w.\-]+\.\w+"),
-    "KR_RRN": re.compile(r"\b\d{6}-\d{7}\b"),             # 주민등록번호
+    # 주민등록번호 — \b 대신 숫자 경계 lookaround: 한글은 \w에 포함되어
+    # '…1234567입니다'처럼 조사가 붙으면 \b가 성립하지 않아 마스킹이 누락된다.
+    "KR_RRN": re.compile(r"(?<!\d)\d{6}-\d{7}(?!\d)"),
 }
 
 
